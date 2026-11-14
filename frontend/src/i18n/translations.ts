@@ -353,6 +353,42 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
 
     // Explore Mode — Section 4: Explore More (Progressive Disclosure)
     'explore.sec4.accStats': 'Change Statistics & Numerical Breakdown',
+
+    // 5-State Evidence Discipline (Verified / Computed / Candidate / Inferred / Unavailable)
+    'evidence.barLabel': 'Evidence Status:',
+    'evidence.ledgerTitle': 'Five-State Scientific Evidence Classification',
+    'evidence.ledgerIntro':
+      'Every claim in ChangeLens carries an explicit epistemic state so verified measurements, deterministic calculations, catalog candidates, physical hypotheses, and missing evidence are never confused.',
+    'evidence.tagVerified': 'Verified',
+    'evidence.tagComputed': 'Computed',
+    'evidence.tagCandidate': 'Candidate',
+    'evidence.tagInferred': 'Inferred',
+    'evidence.tagUnavailable': 'Unavailable',
+    'evidence.scopeCoverage': 'Coverage:',
+    'evidence.scopeComparison': 'Comparison:',
+    'evidence.level1Badge': 'Verified / Computed',
+    'evidence.level2Badge': 'Inferred (Hypothesis Only)',
+    'evidence.level3Badge': 'Unavailable Without External Data',
+
+    // 6-Act Guided Judge Tour
+    'tour.launchBtn': '6-Act Judge Tour',
+    'tour.activeBtn': 'Tour Active',
+    'tour.panelAria': 'Interactive 6-Act Guided Tour',
+    'tour.actPrefix': 'Act',
+    'tour.ofTotal': 'of 6',
+    'tour.keyTakeaway': 'Key Distinction:',
+    'tour.prevBtn': '← Previous',
+    'tour.nextBtn': 'Next Act →',
+    'tour.finishBtn': 'Finish Tour',
+    'tour.closeBtn': 'Exit Tour',
+
+    // 1-Click Screening & Provenance Receipt
+    'receipt.title': 'Screening & Provenance Receipt',
+    'receipt.subtitle':
+      'Export a deterministic snapshot of the current AOI, gate statuses, real metrics (or honest unavailable state), and limitations.',
+    'receipt.downloadMd': 'Download Receipt (.md)',
+    'receipt.downloadJson': 'Download Receipt (.json)',
+    'receipt.exportedPrefix': 'Exported:',
   },
 
   vi: {
@@ -705,5 +741,41 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
 
     // Explore Mode — Section 4: Explore More (Progressive Disclosure)
     'explore.sec4.accStats': 'Thống kê biến động & Bảng số liệu chi tiết',
+
+    // 5-State Evidence Discipline (Verified / Computed / Candidate / Inferred / Unavailable)
+    'evidence.barLabel': 'Trạng thái bằng chứng:',
+    'evidence.ledgerTitle': 'Phân loại 5 Trạng thái Bằng chứng Khoa học',
+    'evidence.ledgerIntro':
+      'Mọi thông tin trong ChangeLens đều gắn nhãn nhận thức rõ ràng nhằm tách bạch số đo đã xác thực, phép tính xác định, danh mục ứng viên, giả thuyết vật lý và phần dữ liệu chưa khả dụng.',
+    'evidence.tagVerified': 'Đã xác thực',
+    'evidence.tagComputed': 'Đã tính toán',
+    'evidence.tagCandidate': 'Ứng viên',
+    'evidence.tagInferred': 'Suy luận',
+    'evidence.tagUnavailable': 'Không khả dụng',
+    'evidence.scopeCoverage': 'Vùng phủ:',
+    'evidence.scopeComparison': 'So sánh:',
+    'evidence.level1Badge': 'Đã xác thực / Đã tính toán',
+    'evidence.level2Badge': 'Suy luận (Chỉ là giả thuyết)',
+    'evidence.level3Badge': 'Chưa khả dụng (Thiếu dữ liệu ngoài)',
+
+    // 6-Act Guided Judge Tour
+    'tour.launchBtn': 'Tour 6 Chặng',
+    'tour.activeBtn': 'Đang chạy Tour',
+    'tour.panelAria': 'Hướng dẫn tương tác 6 Chặng cho Giám khảo',
+    'tour.actPrefix': 'Chặng',
+    'tour.ofTotal': '/ 6',
+    'tour.keyTakeaway': 'Điểm nhấn:',
+    'tour.prevBtn': '← Quay lại',
+    'tour.nextBtn': 'Chặng tiếp →',
+    'tour.finishBtn': 'Hoàn tất Tour',
+    'tour.closeBtn': 'Thoát Tour',
+
+    // 1-Click Screening & Provenance Receipt
+    'receipt.title': 'Xuất Biên bản Kiểm định & Nguồn gốc',
+    'receipt.subtitle':
+      'Xuất nhanh ảnh chụp xác định của AOI hiện tại, kết quả 10 cổng, số liệu thật (hoặc trạng thái không khả dụng) và đầy đủ giới hạn.',
+    'receipt.downloadMd': 'Tải Biên bản (.md)',
+    'receipt.downloadJson': 'Tải Biên bản (.json)',
+    'receipt.exportedPrefix': 'Đã xuất:',
   },
 };

@@ -86,7 +86,7 @@
 | Excluded Path / Pattern | Size | Reason for Exclusion |
 | :--- | :--- | :--- |
 | `frontend/node_modules/` | `193 MB` | Standard npm dependency tree; reproducibly restored via `npm ci` or `npm install` from `frontend/package-lock.json`. |
-| `frontend/dist/` & `*.tsbuildinfo` | `6.4 MB` | Generated production bundle; reproducibly built via `npm run build`. |
+| `frontend/dist/` & `*.tsbuildinfo` | `~6.6 MB` | Generated production bundle; reproducibly built via `npm run build`. |
 | `data/metadata/range_checkpoints/**/ranges/` & `*.lock` | `34 MB` | Intermediate binary HTTP Range chunk cache files (`*.range`); final verified GeoTIFFs and `state.json` byte ledgers are already preserved. |
 | `preparation/`, `frontend/.recovery/` | `3.1 MB` | Internal pre-hackathon agent relay logs (`INITIAL_STATE.json`, `qa-relay/`, `science-relay/`) and legacy UI backup snapshots not relevant to external reviewers. |
 | `.pytest_cache/`, `__pycache__/`, `*.pyc` | `~250 KB` | Python bytecode and test runner cache. |
@@ -140,7 +140,7 @@ Full details are recorded in [`docs/LICENSES_AND_ATTRIBUTION.md`](LICENSES_AND_A
 ## 6. Public Demo Hosting Readiness & Recommendation
 
 - **Current Public Demo Status**: **No public hosted URL is currently deployed.** Per strict release governance, we do **not** claim a live public URL until the owner authorizes deployment.
-- **Architectural Readiness**: Because `frontend/dist/` is a **100% static client bundle (`6.4 MB` uncompressed, ~`1.5 MB` JS/CSS + `5.0 MB` static GeoJSON/PNG assets)** with zero backend server requirements and relative asset resolution (`import.meta.env.BASE_URL`), it can be deployed in under 2 minutes to any static host:
+- **Architectural Readiness**: Because `frontend/dist/` is a **100% static client bundle (approximately `6.6 MB` uncompressed / `~6,842,940` bytes pre-P1, `6,843,141` bytes verified post-P1 across JS/CSS and static GeoJSON/PNG assets)** with zero backend server requirements and relative asset resolution (`import.meta.env.BASE_URL`), it can be deployed in under 2 minutes to any static host:
   1. **Recommended Option 1 — GitHub Pages (via GitHub Actions)**: Zero cost, lives in the same repository, automatic deployment on push to `main` (set `base: '/<repo-name>/'` in `vite.config.ts` if hosted on a project subpath, or `base: '/'` on a custom domain / Cloudflare Pages / Vercel / Netlify).
   2. **Recommended Option 2 — Cloudflare Pages / Vercel / Netlify**: Zero config (`Root directory: frontend`, `Build command: npm run build`, `Output directory: dist`), works out-of-the-box with `base: '/'`.
 

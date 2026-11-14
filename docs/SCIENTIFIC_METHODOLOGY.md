@@ -1,8 +1,8 @@
 # Scientific Methodology
 
-> **Status: IMPLEMENTATION (NASA Space Apps 2026, started 14 Nov 2026 00:00 ICT; authorized by project owner Trung).**
+> **Status: VERIFIED IMPLEMENTATION — Team 4/K (NASA Space Apps Challenge 2026, Hanoi, Vietnam).**
 
-Status: active implementation. Deterministic radar baseline ($P_{\text{dB}} = 10\log_{10}P$, $\Delta\text{dB} = \text{after}_{\text{dB}} - \text{before}_{\text{dB}}$), 10 automated compatibility gates, and 3-level interpretation hierarchy. Scope is strictly Mekong Delta (ĐBSCL), prioritizing Dong Thap Muoi.
+Deterministic radar physics baseline ($P_{\text{dB}} = 10\log_{10}P$, $\Delta\text{dB} = \text{after}_{\text{dB}} - \text{before}_{\text{dB}}$), 10 automated compatibility gates (`pipeline/gates.py`), 5 explicit Evidence States (`Verified`, `Computed`, `Candidate`, `Inferred`, `Unavailable`), and 3-level interpretation hierarchy. Scope spans Vietnam's Mekong Delta (`ĐBSCL`), anchored by the **An Giang Verified Window (`99.91%` valid)** and **Đồng Tháp Diagnostic Window (`0.00%` valid off-swath)**.
 
 ## Evidence and product choice
 
@@ -10,7 +10,7 @@ The lead reviewed the [official ASF GCOV guide](https://nisar-docs.asf.alaska.ed
 
 Prefer validated GCOV. Do not silently substitute provisional or beta products. Any provisional fallback requires a recorded scientific review and prominent maturity limitations. Exclude beta products from the mandatory demonstration unless a separately justified review establishes their suitability.
 
-The linked GCOV product specification Revision F was inaccessible during the lead's review. Exact metadata paths, mask definitions, fill values, scaling and release-specific quality issues remain verification tasks. The following gates are original project design requirements, not a claim that the specification was inspected.
+During authorized execution on 2026-11-14, the team directly inspected live `NISAR_L2_GCOV_V1` HDF5 structure (`/science/LSAR/identification`, `/science/LSAR/GCOV/grids/frequencyA/HHHH`, `mask`, `numberOfLooks`, `projection`, `xCoordinates`, `yCoordinates`) inside the `250 MB` HTTP Range budget to ground every gate below against real NASA/ASF granules.
 
 ## Compatibility and validity gates
 
@@ -54,27 +54,19 @@ The planned signed comparison is:
 
 Positive values indicate increased radar power; negative values indicate decreased power. The equivalent log-ratio and dB subtraction require matching quantities and valid positive inputs. Do not apply a second logarithm to existing dB values. Do not use the amplitude conversion factor for power. Zero, negative, nonfinite and invalid samples are excluded from logarithmic comparison, with counts and reasons recorded; do not replace them with an arbitrary epsilon.
 
-A change overlay is an exploratory measurement comparison. Any later threshold must have a documented purpose, derivation, sensitivity assessment and independent evaluation where a classification claim is made. No threshold, confidence score or detection accuracy is established now. Before/after displays must share the same quantity, unit and stretch.
+A change overlay is a deterministic physical screening comparison. In the verified An Giang window, $\pm 3.0\text{ dB}$ screening classes (alongside optional $\pm 2.0\text{ dB}$ and $\pm 4.0\text{ dB}$ sensitivity visualizations) are explicitly presented as exploratory magnitude thresholds without fabricated classification confidence or uncalibrated accuracy percentages. Before/after overlays share identical linear-power units, scaling, and dB bounds (`[-25, 0] dB`).
 
-## Future workflow pseudocode
+## Implemented Deterministic Processing Workflow
+
+Executed via [`pipeline/extract_mask_pair.py`](../pipeline/extract_mask_pair.py), [`pipeline/gates.py`](../pipeline/gates.py), [`pipeline/extract_verified_pair.py`](../pipeline/extract_verified_pair.py), and [`pipeline/process_pair.py`](../pipeline/process_pair.py) inside a strict `250 MB` resumable HTTP Range transfer cap (`33.81 MB` used across Stage 1 + Stage 2):
 
 ```text
-accept a bounded AOI and documented discovery query
-identify candidate authentic NISAR observations
-inspect authoritative metadata, release notes and quality information
-record every compatibility gate as PASS, BLOCK or UNKNOWN
-if any mandatory gate is BLOCK or UNKNOWN:
-    retain inspection evidence; do not produce a comparison
-review any required raster preparation and target-grid policy
-establish matching analysis locations and jointly valid support
-if valid support is empty: stop with an explicit reason
-compare the selected compatible quantity only on valid support
-document parameters, exclusions, provenance and remaining limitations
-review visual legends and scientific wording
-release artifacts only after separate publication authorization
+1. Discover candidate granules via NASA CMR over the Mekong Delta AOI (`pipeline/discover.py`).
+2. Stage 1 (`extract_mask_pair.py`): extract bounded HDF5 `/mask` slices (~1.15 MB) to verify real valid coverage (`0 < mask < 255`) before pulling full science layers; fail closed if valid coverage = 0% (proven in Đồng Tháp).
+3. Gate Screening (`gates.py`): evaluate all 10 compatibility gates (`pass` | `fail` | `unknown`), verifying maturity, polarization, track/frame/look geometry, CRID, dynamic X/Y pixel spacing & half-pixel alignment, overlap, mask semantics, radiometry, and resolution.
+4. Stage 2 (`extract_verified_pair.py`): extract bounded `HHHH` + `numberOfLooks` slices (~32.66 MB) strictly when mandatory gates pass; apply `normalized_boxcar_5x5` in linear $\gamma^0$ power over valid support (`norm > 0.2`), compute `10*log10(P)` and `Delta dB`, export GeoTIFFs + georeferenced RGBA PNGs, and record SHA-256 checksums (`verified_pair_manifest.json`).
+5. Static Presentation: bind immutable verified manifests & PNGs into the zero-backend MapLibre web app with explicit 5 Evidence States (`Verified`, `Computed`, `Candidate`, `Inferred`, `Unavailable`).
 ```
-
-This is an algorithm specification, not executable processing code.
 
 ## Interpretation and uncertainty
 

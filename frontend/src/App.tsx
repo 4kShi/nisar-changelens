@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MapStage, type MapState } from './components/MapStage';
 import {
   ACQUISITIONS,
+  EVIDENCE_STATES,
   EVIDENCE_TIERS,
+  GUIDED_TOUR_ACTS,
   MEKONG_PROVINCES,
   PROVENANCE,
   SCIENTIFIC_QA_ITEMS,
@@ -13,15 +15,88 @@ import {
   discoverCompatiblePairs,
   estimateBboxAreaKm2,
   evaluatePairCompatibility,
+  getAreaEvidenceStatus,
   normalizeChronologicalPair,
+  type EvidenceStateId,
+  type GuidedTourAct,
   type OverlayLayerId,
   type StudyAreaId,
   type StudyAreaPreset,
   type VisualizationThresholdId,
 } from './data/study';
+import {
+  buildScreeningReceiptPayload,
+  formatScreeningReceiptMarkdown,
+} from './data/receipt';
 import { DISCOVERED_GRANULES } from './data/catalogInventory';
 import { I18nProvider, useI18n } from './i18n/I18nContext';
 import type { Language } from './i18n/translations';
+
+function triggerTextDownload(filename: string, content: string, mimeType: string): void {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  if (typeof URL.createObjectURL !== 'function') return;
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+}
+
+interface ReceiptExportCardProps {
+  testIdPrefix: string;
+  title: string;
+  subtitle: string;
+  mdLabel: string;
+  jsonLabel: string;
+  exportedLabel: string | null;
+  onDownload: (format: 'md' | 'json') => void;
+}
+
+function ReceiptExportCard({
+  testIdPrefix,
+  title,
+  subtitle,
+  mdLabel,
+  jsonLabel,
+  exportedLabel,
+  onDownload,
+}: ReceiptExportCardProps) {
+  return (
+    <div className="receipt-export-panel" data-testid={`${testIdPrefix}-panel`}>
+      <div className="receipt-export-copy">
+        <strong>{title}</strong>
+        <p>{subtitle}</p>
+      </div>
+      <div className="receipt-export-actions">
+        <button
+          type="button"
+          className="receipt-btn"
+          data-testid={`${testIdPrefix}-md`}
+          onClick={() => onDownload('md')}
+        >
+          {mdLabel}
+        </button>
+        <button
+          type="button"
+          className="receipt-btn"
+          data-testid={`${testIdPrefix}-json`}
+          onClick={() => onDownload('json')}
+        >
+          {jsonLabel}
+        </button>
+      </div>
+      {exportedLabel && (
+        <small className="receipt-exported-note" role="status" data-testid={`${testIdPrefix}-status`}>
+          {exportedLabel}
+        </small>
+      )}
+    </div>
+  );
+}
 
 export type ViewMode = 'explore' | 'research';
 type RailSectionFilter = 'all' | 'aoi' | 'catalog' | 'compare' | 'interpret' | 'provenance';
@@ -124,6 +199,8 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
   const [isDraggingSplitter, setIsDraggingSplitter] = useState<boolean>(false);
   const [sectionFilter, setSectionFilter] = useState<RailSectionFilter>('all');
   const [activeQaId, setActiveQaId] = useState<string>(SCIENTIFIC_QA_ITEMS[0].id);
+  const [tourActive, setTourActive] = useState<boolean>(false);
+  const [tourStepIndex, setTourStepIndex] = useState<number>(0);
   const [mapState, setMapState] = useState<MapState>('loading');
   const [location, setLocation] = useState<{ longitude: number; latitude: number } | null>(null);
 
@@ -388,6 +465,122 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
     setShowSyntheticFixture(false);
   }, []);
 
+  const areaEvidenceStatus = useMemo(
+    () => getAreaEvidenceStatus(area, compatibility.allPassed),
+    [area, compatibility.allPassed]
+  );
+
+  const activeTourAct = GUIDED_TOUR_ACTS[tourStepIndex] ?? GUIDED_TOUR_ACTS[0];
+
+  const applyTourAct = useCallback(
+    (act: GuidedTourAct) => {
+      handleAreaChange(act.area);
+      if (act.beforeConceptId) setBeforeConceptId(act.beforeConceptId);
+      if (act.afterConceptId) setAfterConceptId(act.afterConceptId);
+      setAutoOrderNotice(false);
+      setOverlayLayer(act.overlayLayer);
+      if (act.visualizationThreshold) {
+        setVisualizationThreshold(act.visualizationThreshold);
+      } else {
+        setVisualizationThreshold('continuous');
+      }
+      if (act.overlayLayer === 'swipe_before_after') {
+        setSwipePercent(50);
+      }
+      setMode(act.mode);
+      setSectionFilter(act.sectionFilter);
+    },
+    [handleAreaChange, setMode]
+  );
+
+  const goToTourAct = useCallback(
+    (index: number) => {
+      const clamped = Math.max(0, Math.min(GUIDED_TOUR_ACTS.length - 1, index));
+      setTourStepIndex(clamped);
+      applyTourAct(GUIDED_TOUR_ACTS[clamped]);
+    },
+    [applyTourAct]
+  );
+
+  const startTour = useCallback(() => {
+    setTourActive(true);
+    setTourStepIndex(0);
+    applyTourAct(GUIDED_TOUR_ACTS[0]);
+  }, [applyTourAct]);
+
+  const closeTour = useCallback(() => {
+    setTourActive(false);
+    setSectionFilter('all');
+  }, []);
+
+  const getEvidenceTagLabel = useCallback(
+    (stateId: EvidenceStateId): string => {
+      const keyMap: Record<EvidenceStateId, string> = {
+        VERIFIED: 'evidence.tagVerified',
+        COMPUTED: 'evidence.tagComputed',
+        CANDIDATE: 'evidence.tagCandidate',
+        INFERRED: 'evidence.tagInferred',
+        UNAVAILABLE: 'evidence.tagUnavailable',
+      };
+      return t(keyMap[stateId]);
+    },
+    [t]
+  );
+
+  const getEvidenceBadgeClass = useCallback((stateId: EvidenceStateId): string => {
+    const classMap: Record<EvidenceStateId, string> = {
+      VERIFIED: 'ev-pill ev-verified',
+      COMPUTED: 'ev-pill ev-computed',
+      CANDIDATE: 'ev-pill ev-candidate',
+      INFERRED: 'ev-pill ev-inferred',
+      UNAVAILABLE: 'ev-pill ev-unavailable',
+    };
+    return classMap[stateId];
+  }, []);
+
+  const [lastExportedReceipt, setLastExportedReceipt] = useState<string | null>(null);
+
+  const handleDownloadReceipt = useCallback(
+    (format: 'md' | 'json') => {
+      const payload = buildScreeningReceiptPayload({
+        areaId: area,
+        displayArea,
+        beforeGranule: selectedBeforeGranule,
+        afterGranule: selectedAfterGranule,
+        compatibility,
+        thresholdId: visualizationThreshold,
+        language: lang,
+        mode,
+      });
+      const dateTag =
+        selectedBeforeGranule && selectedAfterGranule
+          ? `${selectedBeforeGranule.date}-to-${selectedAfterGranule.date}`
+          : 'pair';
+      const filename = `nisar-changelens-${area}-${dateTag}.${format}`;
+      const content =
+        format === 'json'
+          ? JSON.stringify(payload, null, 2)
+          : formatScreeningReceiptMarkdown(payload, lang);
+      const mimeType =
+        format === 'json'
+          ? 'application/json;charset=utf-8'
+          : 'text/markdown;charset=utf-8';
+      triggerTextDownload(filename, content, mimeType);
+      setLastExportedReceipt(`${t('receipt.exportedPrefix')} ${filename}`);
+    },
+    [
+      area,
+      displayArea,
+      selectedBeforeGranule,
+      selectedAfterGranule,
+      compatibility,
+      visualizationThreshold,
+      lang,
+      mode,
+      t,
+    ]
+  );
+
   const activeQa =
     SCIENTIFIC_QA_ITEMS.find((item) => item.id === activeQaId) ?? SCIENTIFIC_QA_ITEMS[0];
 
@@ -585,20 +778,112 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
               <span className="mode-badge">
                 {mode === 'explore' ? t('mode.exploreBadge') : t('mode.researchBadge')}
               </span>
-              <button
-                type="button"
-                className="mode-inline-switch"
-                onClick={() => setMode(mode === 'explore' ? 'research' : 'explore')}
-              >
-                {mode === 'explore'
-                  ? t('mode.switchToResearchBtn')
-                  : t('mode.switchToExploreBtn')}
-              </button>
+              <div className="mode-banner-actions">
+                <button
+                  type="button"
+                  className={`tour-launch-btn ${tourActive ? 'active' : ''}`}
+                  data-testid="start-tour-btn"
+                  onClick={() => (tourActive ? closeTour() : startTour())}
+                >
+                  ▶ {tourActive ? t('tour.activeBtn') : t('tour.launchBtn')}
+                </button>
+                <button
+                  type="button"
+                  className="mode-inline-switch"
+                  onClick={() => setMode(mode === 'explore' ? 'research' : 'explore')}
+                >
+                  {mode === 'explore'
+                    ? t('mode.switchToResearchBtn')
+                    : t('mode.switchToExploreBtn')}
+                </button>
+              </div>
             </div>
             <p className="mode-banner-hint">
               {mode === 'explore' ? t('mode.exploreHint') : t('mode.researchHint')}
             </p>
           </div>
+
+          {/* 6-Act Guided Competition Tour */}
+          {tourActive && (
+            <section
+              className="guided-tour-panel"
+              aria-label={t('tour.panelAria')}
+              data-testid="guided-tour-panel"
+            >
+              <div className="tour-header">
+                <div className="tour-title-group">
+                  <span className="tour-act-pill">
+                    {t('tour.actPrefix')} {activeTourAct.actNumber} {t('tour.ofTotal')}
+                  </span>
+                  <span className={getEvidenceBadgeClass(activeTourAct.evidenceHighlight)}>
+                    {getEvidenceTagLabel(activeTourAct.evidenceHighlight)}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="tour-close-btn"
+                  onClick={closeTour}
+                  aria-label={t('tour.closeBtn')}
+                  data-testid="tour-close-btn"
+                >
+                  {t('tour.closeBtn')} ✕
+                </button>
+              </div>
+
+              <div className="tour-step-dots" role="tablist" aria-label={t('tour.panelAria')}>
+                {GUIDED_TOUR_ACTS.map((act, idx) => (
+                  <button
+                    key={act.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={tourStepIndex === idx}
+                    className={`tour-dot-btn ${tourStepIndex === idx ? 'active' : ''}`}
+                    data-testid={`tour-step-${act.actNumber}`}
+                    onClick={() => goToTourAct(idx)}
+                  >
+                    {act.actNumber}
+                  </button>
+                ))}
+              </div>
+
+              <strong className="tour-step-title">
+                {pick(activeTourAct.title, activeTourAct.title_vi)}
+              </strong>
+              <p className="tour-step-body">{pick(activeTourAct.body, activeTourAct.body_vi)}</p>
+              <div className="tour-takeaway">
+                <b>{t('tour.keyTakeaway')}</b>{' '}
+                {pick(activeTourAct.takeaway, activeTourAct.takeaway_vi)}
+              </div>
+
+              <div className="tour-nav-footer">
+                <button
+                  type="button"
+                  className="tour-nav-btn"
+                  data-testid="tour-prev-btn"
+                  disabled={tourStepIndex === 0}
+                  onClick={() => goToTourAct(tourStepIndex - 1)}
+                >
+                  {t('tour.prevBtn')}
+                </button>
+                <button
+                  type="button"
+                  className="tour-nav-btn primary"
+                  data-testid="tour-next-btn"
+                  onClick={() => {
+                    if (tourStepIndex >= GUIDED_TOUR_ACTS.length - 1) {
+                      closeTour();
+                    } else {
+                      goToTourAct(tourStepIndex + 1);
+                    }
+                  }}
+                >
+                  {tourStepIndex >= GUIDED_TOUR_ACTS.length - 1
+                    ? t('tour.finishBtn')
+                    : t('tour.nextBtn')}
+                </button>
+              </div>
+            </section>
+          )}
 
           {/* Quick Step Navigation Bar — Visible in Research & Gates Mode */}
           {mode === 'research' && (
@@ -646,6 +931,25 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
                 >
                   {t('sec1.resetBtn')}
                 </button>
+              </div>
+
+              <div
+                className="area-evidence-status-bar"
+                data-testid="area-evidence-status-bar"
+                aria-label={t('evidence.barLabel')}
+              >
+                <span className="evidence-scope-item">
+                  <small>{t('evidence.scopeCoverage')}</small>{' '}
+                  <span className={getEvidenceBadgeClass(areaEvidenceStatus.coverageState)}>
+                    {getEvidenceTagLabel(areaEvidenceStatus.coverageState)}
+                  </span>
+                </span>
+                <span className="evidence-scope-item">
+                  <small>{t('evidence.scopeComparison')}</small>{' '}
+                  <span className={getEvidenceBadgeClass(areaEvidenceStatus.comparisonState)}>
+                    {getEvidenceTagLabel(areaEvidenceStatus.comparisonState)}
+                  </span>
+                </span>
               </div>
 
               {mode === 'explore' && (
@@ -1001,6 +1305,9 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
                         <span className="eyebrow">{t('explore.sec3.eyebrow')}</span>
                         <h3>{t('explore.sec3.title')}</h3>
                       </div>
+                      <span className={getEvidenceBadgeClass('COMPUTED')}>
+                        {getEvidenceTagLabel('COMPUTED')}
+                      </span>
                     </div>
 
                     <p className="what-changed-lead">{t('explore.sec3.leadText')}</p>
@@ -1175,6 +1482,16 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
                       <strong>{t('explore.sec3.cautionBoxTitle')}</strong>
                       <p>{t('explore.sec3.cautionBoxBody')}</p>
                     </div>
+
+                    <ReceiptExportCard
+                      testIdPrefix="compare-receipt"
+                      title={t('receipt.title')}
+                      subtitle={t('receipt.subtitle')}
+                      mdLabel={t('receipt.downloadMd')}
+                      jsonLabel={t('receipt.downloadJson')}
+                      exportedLabel={lastExportedReceipt}
+                      onDownload={handleDownloadReceipt}
+                    />
                   </div>
 
                   {/* Quantitative Statistics Card — Open in Research, Progressive Disclosure in Explore */}
@@ -1248,6 +1565,14 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
                 </>
               ) : (
                 <div className="empty-state" role="status" data-testid="comparison-blocked-state">
+                  <div className="empty-state-badges">
+                    <span className={getEvidenceBadgeClass(areaEvidenceStatus.coverageState)}>
+                      {t('evidence.scopeCoverage')} {getEvidenceTagLabel(areaEvidenceStatus.coverageState)}
+                    </span>
+                    <span className={getEvidenceBadgeClass('UNAVAILABLE')}>
+                      {t('evidence.scopeComparison')} {getEvidenceTagLabel('UNAVAILABLE')}
+                    </span>
+                  </div>
                   <strong>{t('sec3.blockedTitle')}</strong>
                   <p className="plain-blocked-explanation">
                     {pick(compatibility.plainExplanation, compatibility.plainExplanation_vi)}
@@ -1273,6 +1598,16 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
                       {t('sec3.fixtureToggle')}
                     </label>
                   </div>
+
+                  <ReceiptExportCard
+                    testIdPrefix="blocked-receipt"
+                    title={t('receipt.title')}
+                    subtitle={t('receipt.subtitle')}
+                    mdLabel={t('receipt.downloadMd')}
+                    jsonLabel={t('receipt.downloadJson')}
+                    exportedLabel={lastExportedReceipt}
+                    onDownload={handleDownloadReceipt}
+                  />
                 </div>
               )}
             </section>
@@ -1446,7 +1781,10 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
               <section className="rail-section understand-section">
                 <div className="hierarchy-cards">
                   <div className="hierarchy-card level-1">
-                    <span className="level-tag">{t('sec4.level1Tag')}</span>
+                    <div className="level-tag-row">
+                      <span className="level-tag">{t('sec4.level1Tag')}</span>
+                      <span className="ev-pill ev-verified">{t('evidence.level1Badge')}</span>
+                    </div>
                     {compatibility.allPassed ? (
                       <p>{t('sec4.level1VerifiedBody')}</p>
                     ) : (
@@ -1458,7 +1796,10 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
                   </div>
 
                   <div className="hierarchy-card level-2">
-                    <span className="level-tag">{t('sec4.level2Tag')}</span>
+                    <div className="level-tag-row">
+                      <span className="level-tag">{t('sec4.level2Tag')}</span>
+                      <span className="ev-pill ev-inferred">{t('evidence.level2Badge')}</span>
+                    </div>
                     <ul>
                       <li>
                         <strong>{t('sec4.level2Item1Title')}</strong> {t('sec4.level2Item1Body')}
@@ -1470,7 +1811,10 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
                   </div>
 
                   <div className="hierarchy-card level-3">
-                    <span className="level-tag">{t('sec4.level3Tag')}</span>
+                    <div className="level-tag-row">
+                      <span className="level-tag">{t('sec4.level3Tag')}</span>
+                      <span className="ev-pill ev-unavailable">{t('evidence.level3Badge')}</span>
+                    </div>
                     <p>
                       <strong>{t('sec4.level3SupportedTitle')}</strong>{' '}
                       {t('sec4.level3SupportedBody')}
@@ -1478,6 +1822,22 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
                       <strong>{t('sec4.level3NotSupportedTitle')}</strong>{' '}
                       {t('sec4.level3NotSupportedBody')}
                     </p>
+                  </div>
+                </div>
+
+                <div className="evidence-states-ledger" data-testid="evidence-states-ledger">
+                  <div className="ledger-head">
+                    <strong>{t('evidence.ledgerTitle')}</strong>
+                    <p>{t('evidence.ledgerIntro')}</p>
+                  </div>
+                  <div className="evidence-states-grid">
+                    {EVIDENCE_STATES.map((ev) => (
+                      <div key={ev.id} className="evidence-state-card" data-testid={`evidence-card-${ev.id.toLowerCase()}`}>
+                        <span className={`ev-pill ${ev.badgeClass}`}>{pick(ev.label, ev.label_vi)}</span>
+                        <p>{pick(ev.summary, ev.summary_vi)}</p>
+                        <small>{pick(ev.examples, ev.examples_vi)}</small>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -1553,6 +1913,16 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
                 <strong>{t('explore.sec2.cridPolicyTitle')}</strong>
                 <p>{t('explore.sec2.cridPolicyBody')}</p>
               </div>
+
+              <ReceiptExportCard
+                testIdPrefix="provenance-receipt"
+                title={t('receipt.title')}
+                subtitle={t('receipt.subtitle')}
+                mdLabel={t('receipt.downloadMd')}
+                jsonLabel={t('receipt.downloadJson')}
+                exportedLabel={lastExportedReceipt}
+                onDownload={handleDownloadReceipt}
+              />
 
               <div className="gates-table-wrap">
                 <table className="gates-table" aria-label={t('sec5.tableAria')}>

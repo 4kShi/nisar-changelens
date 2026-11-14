@@ -8,6 +8,7 @@ Every check returns:
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 import h5py
@@ -153,48 +154,128 @@ def evaluate_gates(
             "required_action": None if g05_pass else "Only compare observations from the same orbit track, frame and look direction."
         })
 
-        # G06: CRS & Grid Alignment (Half-pixel check)
+        # G06: CRS & Grid Alignment (Half-pixel check & independent X/Y resolution)
         b_proj = get_val(hb, "science/LSAR/GCOV/grids/frequencyA/projection")
         a_proj = get_val(ha, "science/LSAR/GCOV/grids/frequencyA/projection")
-        b_x = hb["science/LSAR/GCOV/grids/frequencyA/xCoordinates"][()]
-        a_x = ha["science/LSAR/GCOV/grids/frequencyA/xCoordinates"][()]
-        b_y = hb["science/LSAR/GCOV/grids/frequencyA/yCoordinates"][()]
-        a_y = ha["science/LSAR/GCOV/grids/frequencyA/yCoordinates"][()]
+        try:
+            b_x = np.asarray(hb["science/LSAR/GCOV/grids/frequencyA/xCoordinates"][()], dtype=float)
+            a_x = np.asarray(ha["science/LSAR/GCOV/grids/frequencyA/xCoordinates"][()], dtype=float)
+            b_y = np.asarray(hb["science/LSAR/GCOV/grids/frequencyA/yCoordinates"][()], dtype=float)
+            a_y = np.asarray(ha["science/LSAR/GCOV/grids/frequencyA/yCoordinates"][()], dtype=float)
+        except KeyError:
+            b_x = a_x = b_y = a_y = np.array([], dtype=float)
 
-        b_dx = b_x[1] - b_x[0] if len(b_x) > 1 else None
-        a_dx = a_x[1] - a_x[0] if len(a_x) > 1 else None
-        b_dy = b_y[1] - b_y[0] if len(b_y) > 1 else None
-        a_dy = a_y[1] - a_y[0] if len(a_y) > 1 else None
+        b_dx = float(b_x[1] - b_x[0]) if len(b_x) > 1 else None
+        a_dx = float(a_x[1] - a_x[0]) if len(a_x) > 1 else None
+        b_dy = float(b_y[1] - b_y[0]) if len(b_y) > 1 else None
+        a_dy = float(a_y[1] - a_y[0]) if len(a_y) > 1 else None
 
-        # Check alignment: origin modulo spacing must match
-        x_align_diff = abs((b_x[0] - a_x[0]) % abs(b_dx)) if b_dx else 0
-        y_align_diff = abs((b_y[0] - a_y[0]) % abs(b_dy)) if b_dy else 0
-        exact_match = (b_proj == a_proj and b_dx == a_dx and b_dy == a_dy and x_align_diff < 1e-4 and y_align_diff < 1e-4)
+        spacing_valid = (
+            b_proj is not None
+            and a_proj is not None
+            and b_dx is not None
+            and a_dx is not None
+            and b_dy is not None
+            and a_dy is not None
+            and math.isfinite(b_dx)
+            and math.isfinite(a_dx)
+            and math.isfinite(b_dy)
+            and math.isfinite(a_dy)
+            and b_dx != 0.0
+            and a_dx != 0.0
+            and b_dy != 0.0
+            and a_dy != 0.0
+        )
+
+        if spacing_valid:
+            b_res_x = abs(b_dx)
+            b_res_y = abs(b_dy)
+            a_res_x = abs(a_dx)
+            a_res_y = abs(a_dy)
+            uniform_grid = (
+                bool(np.allclose(np.diff(b_x), b_dx, rtol=1e-5, atol=1e-6))
+                and bool(np.allclose(np.diff(a_x), a_dx, rtol=1e-5, atol=1e-6))
+                and bool(np.allclose(np.diff(b_y), b_dy, rtol=1e-5, atol=1e-6))
+                and bool(np.allclose(np.diff(a_y), a_dy, rtol=1e-5, atol=1e-6))
+            )
+            x_rem = abs(float(b_x[0] - a_x[0])) % b_res_x
+            y_rem = abs(float(b_y[0] - a_y[0])) % b_res_y
+            x_align_diff = min(x_rem, b_res_x - x_rem)
+            y_align_diff = min(y_rem, b_res_y - y_rem)
+            same_spacing = (
+                math.isclose(b_dx, a_dx, rel_tol=1e-6, abs_tol=1e-6)
+                and math.isclose(b_dy, a_dy, rel_tol=1e-6, abs_tol=1e-6)
+            )
+            exact_match = (
+                str(b_proj) == str(a_proj)
+                and uniform_grid
+                and same_spacing
+                and x_align_diff < 1e-4
+                and y_align_diff < 1e-4
+            )
+            is_square_pixels = math.isclose(b_res_x, b_res_y, rel_tol=1e-6, abs_tol=1e-6)
+            posting_label = (
+                f"{b_res_x:g} m posting"
+                if is_square_pixels
+                else f"{b_res_x:g} m × {b_res_y:g} m posting"
+            )
+            g06_observed = {
+                "crs": f"EPSG:{b_proj}",
+                "pixel_spacing_x": b_dx,
+                "pixel_spacing_y": b_dy,
+                "pixel_spacing_x_m": b_res_x,
+                "pixel_spacing_y_m": b_res_y,
+                "is_square_pixels": is_square_pixels,
+                "uniform_grid": uniform_grid,
+                "origin_offset_x": float(abs(b_x[0] - a_x[0])),
+                "origin_offset_y": float(abs(b_y[0] - a_y[0])),
+                "grid_phase_offset_x": float(x_align_diff),
+                "grid_phase_offset_y": float(y_align_diff),
+            }
+            g06_reason = (
+                f"Grids are co-registered on EPSG:{b_proj} with {posting_label}. No sub-pixel offset."
+                if exact_match
+                else "CRS, pixel spacing, grid uniformity, or sub-pixel alignment mismatch."
+            )
+        else:
+            b_res_x = b_res_y = None
+            is_square_pixels = False
+            posting_label = "unavailable"
+            exact_match = False
+            g06_observed = {
+                "before_crs": b_proj,
+                "after_crs": a_proj,
+                "pixel_spacing_x": b_dx,
+                "pixel_spacing_y": b_dy,
+                "before_x_len": int(len(b_x)),
+                "after_x_len": int(len(a_x)),
+                "before_y_len": int(len(b_y)),
+                "after_y_len": int(len(a_y)),
+            }
+            g06_reason = "Missing or invalid CRS/coordinate spacing metadata."
 
         checks.append({
             "rule_id": "G06_crs_grid_alignment",
             "title": "Coordinate Reference System and Grid Alignment",
             "status": "pass" if exact_match else "fail",
             "blocking": True,
-            "observed_values": {
-                "crs": f"EPSG:{b_proj}",
-                "pixel_spacing_x": float(b_dx), "pixel_spacing_y": float(b_dy),
-                "origin_offset_x": float(abs(b_x[0] - a_x[0])),
-                "origin_offset_y": float(abs(b_y[0] - a_y[0])),
-                "grid_phase_offset_x": float(x_align_diff),
-                "grid_phase_offset_y": float(y_align_diff),
-            },
-            "evidence_refs": ["science/LSAR/GCOV/grids/frequencyA/projection", "science/LSAR/GCOV/grids/frequencyA/xCoordinates"],
-            "reason": f"Grids are perfectly co-registered on EPSG:{b_proj} with 20m posting. No sub-pixel offset." if exact_match else "Grid alignment or CRS mismatch.",
-            "required_action": None if exact_match else "Align grids to identical coordinate lattice before pixel comparison."
+            "observed_values": g06_observed,
+            "evidence_refs": ["science/LSAR/GCOV/grids/frequencyA/projection", "science/LSAR/GCOV/grids/frequencyA/xCoordinates", "science/LSAR/GCOV/grids/frequencyA/yCoordinates"],
+            "reason": g06_reason,
+            "required_action": None if exact_match else "Verify CRS, valid uniform X/Y spacing, and identical coordinate lattice before pixel comparison."
         })
 
         # G07: Coverage Overlap
-        x_min_overlap = max(b_x[0], a_x[0]) if b_dx > 0 else max(b_x[-1], a_x[-1])
-        x_max_overlap = min(b_x[-1], a_x[-1]) if b_dx > 0 else min(b_x[0], a_x[0])
-        y_min_overlap = max(b_y[-1], a_y[-1]) if b_dy < 0 else max(b_y[0], a_y[0])
-        y_max_overlap = min(b_y[0], a_y[0]) if b_dy < 0 else min(b_y[-1], a_y[-1])
-        has_overlap = (x_max_overlap > x_min_overlap) and (y_max_overlap > y_min_overlap)
+        if spacing_valid and len(b_x) > 0 and len(a_x) > 0 and len(b_y) > 0 and len(a_y) > 0:
+            x_min_overlap = max(float(b_x[0]), float(a_x[0])) if b_dx > 0 else max(float(b_x[-1]), float(a_x[-1]))
+            x_max_overlap = min(float(b_x[-1]), float(a_x[-1])) if b_dx > 0 else min(float(b_x[0]), float(a_x[0]))
+            y_min_overlap = max(float(b_y[-1]), float(a_y[-1])) if b_dy < 0 else max(float(b_y[0]), float(a_y[0]))
+            y_max_overlap = min(float(b_y[0]), float(a_y[0])) if b_dy < 0 else min(float(b_y[-1]), float(a_y[-1]))
+            has_overlap = (x_max_overlap > x_min_overlap) and (y_max_overlap > y_min_overlap)
+            overlap_bounds = [float(x_min_overlap), float(y_min_overlap), float(x_max_overlap), float(y_max_overlap)]
+        else:
+            has_overlap = False
+            overlap_bounds = None
 
         checks.append({
             "rule_id": "G07_coverage_overlap",
@@ -202,12 +283,12 @@ def evaluate_gates(
             "status": "pass" if has_overlap else "fail",
             "blocking": True,
             "observed_values": {
-                "overlap_projected_bounds": [float(x_min_overlap), float(y_min_overlap), float(x_max_overlap), float(y_max_overlap)],
+                "overlap_projected_bounds": overlap_bounds,
                 "has_overlap": has_overlap
             },
             "evidence_refs": ["science/LSAR/GCOV/grids/frequencyA/xCoordinates", "science/LSAR/GCOV/grids/frequencyA/yCoordinates"],
-            "reason": "100% spatial footprint overlap between repeated cycle acquisitions." if has_overlap else "No spatial overlap.",
-            "required_action": None
+            "reason": "Spatial coordinate footprint overlap confirmed between acquisitions." if has_overlap else "Missing coordinate arrays or zero spatial overlap.",
+            "required_action": None if has_overlap else "Supply valid overlapping projected coordinate grids."
         })
 
         # G08: Mask & NoData Semantics
@@ -248,20 +329,32 @@ def evaluate_gates(
             "required_action": None
         })
 
-        # G10: Effective Resolution vs Pixel Spacing
+        # G10: Effective Resolution vs Pixel Spacing (derived dynamically from verified grid metadata)
+        g10_pass = bool(spacing_valid and b_res_x is not None and b_res_y is not None)
         checks.append({
             "rule_id": "G10_effective_resolution",
             "title": "Effective Resolution vs Pixel Posting",
-            "status": "pass",
-            "blocking": False,
+            "status": "pass" if g10_pass else "fail",
+            "blocking": not g10_pass,
             "observed_values": {
-                "pixel_posting_m": 20.0,
-                "effective_spatial_resolution_m": "~25-30m depending on number of looks",
-                "looks_available": "science/LSAR/GCOV/grids/frequencyA/numberOfLooks" in hb
+                "pixel_posting_m": b_res_x if (g10_pass and is_square_pixels) else ([b_res_x, b_res_y] if g10_pass else None),
+                "pixel_posting_x_m": b_res_x,
+                "pixel_posting_y_m": b_res_y,
+                "is_square_pixels": is_square_pixels if g10_pass else None,
+                "effective_spatial_resolution_m": "multilooked SAR resolution (~20-30m depending on mode and numberOfLooks)",
+                "looks_available": "science/LSAR/GCOV/grids/frequencyA/numberOfLooks" in hb and "science/LSAR/GCOV/grids/frequencyA/numberOfLooks" in ha,
             },
-            "evidence_refs": ["science/LSAR/GCOV/grids/frequencyA/numberOfLooks"],
-            "reason": "Grid posting (20m) distinguished from radiometric resolution (~25-30m) per specification.",
-            "required_action": None
+            "evidence_refs": [
+                "science/LSAR/GCOV/grids/frequencyA/xCoordinates",
+                "science/LSAR/GCOV/grids/frequencyA/yCoordinates",
+                "science/LSAR/GCOV/grids/frequencyA/numberOfLooks",
+            ],
+            "reason": (
+                f"Grid posting ({posting_label}) distinguished from multilooked effective radiometric resolution per specification."
+                if g10_pass
+                else "Cannot determine pixel posting from missing or invalid coordinate spacing metadata."
+            ),
+            "required_action": None if g10_pass else "Provide valid uniform xCoordinates and yCoordinates arrays."
         })
 
     # Overall compatibility
@@ -279,8 +372,7 @@ def evaluate_gates(
 
 if __name__ == "__main__":
     import sys
-    from pipeline.config import LOCAL_FALLBACK_DIR
-    f1 = sys.argv[1] if len(sys.argv) > 1 else str(LOCAL_FALLBACK_DIR / "NISAR_L2_PR_GCOV_032_155_A_006_2005_DHDH_M_20261010T222732_20261010T222741_P05023_N_P_J_001.h5")
-    f2 = sys.argv[2] if len(sys.argv) > 2 else str(LOCAL_FALLBACK_DIR / "NISAR_L2_PR_GCOV_033_155_A_006_2005_DHDH_M_20261022T222732_20261022T222742_P05023_N_P_J_001.h5")
-    res = evaluate_gates(f1, f2)
+    if len(sys.argv) != 3:
+        raise SystemExit("Usage: python -m pipeline.gates <before_gcov.h5> <after_gcov.h5>")
+    res = evaluate_gates(sys.argv[1], sys.argv[2])
     print(json.dumps({"overall_status": res["status"], "checks_summary": [(c["rule_id"], c["status"]) for c in res["checks"]]}, indent=2))

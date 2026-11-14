@@ -1483,5 +1483,245 @@ export const SCIENTIFIC_QA_ITEMS: ReadonlyArray<ScientificInterpretationQA> = [
   },
 ];
 
+export type EvidenceStateId =
+  | 'VERIFIED'
+  | 'COMPUTED'
+  | 'CANDIDATE'
+  | 'INFERRED'
+  | 'UNAVAILABLE';
+
+export interface EvidenceStateDescriptor {
+  id: EvidenceStateId;
+  badgeClass: string;
+  label: string;
+  label_vi: string;
+  summary: string;
+  summary_vi: string;
+  examples: string;
+  examples_vi: string;
+}
+
+export const EVIDENCE_STATES: ReadonlyArray<EvidenceStateDescriptor> = [
+  {
+    id: 'VERIFIED',
+    badgeClass: 'ev-verified',
+    label: 'Verified',
+    label_vi: 'Đã xác thực',
+    summary: 'Passed direct pipeline gate checks, HDF5 coordinate/mask inspection, or SHA-256 verification.',
+    summary_vi: 'Đã kiểm định trực tiếp qua 10 cổng tương thích, mảng HDF5 /mask hoặc mã kiểm tra SHA-256.',
+    examples: 'G4404304390-ASF & G4410154671-ASF (99.91% An Giang valid mask; 0.00% Đồng Tháp off-swath mask; 11 SHA-256 checksums).',
+    examples_vi: 'Cặp An Giang 99,91% hợp lệ; chẩn đoán Đồng Tháp 0,00% ngoài dải quét; 11 mã băm SHA-256.',
+  },
+  {
+    id: 'COMPUTED',
+    badgeClass: 'ev-computed',
+    label: 'Computed',
+    label_vi: 'Đã tính toán',
+    summary: 'Deterministic mathematical output calculated strictly from verified valid pixels via documented formulas.',
+    summary_vi: 'Kết quả toán học xác định được tính trực tiếp từ tập điểm ảnh hợp lệ theo công thức công khai.',
+    examples: '5×5 normalized linear boxcar γ⁰_dB, Δγ⁰_dB mean (+0.417 dB), median (+0.240 dB), P05–P95, and km² class areas.',
+    examples_vi: 'Lọc boxcar 5×5 γ⁰_dB, trung bình Δγ⁰ (+0,417 dB), trung vị (+0,240 dB), P05–P95 và diện tích theo km².',
+  },
+  {
+    id: 'CANDIDATE',
+    badgeClass: 'ev-candidate',
+    label: 'Candidate',
+    label_vi: 'Ứng viên danh mục',
+    summary: 'Authentic NASA CMR metadata or orbital footprint intersection not yet HDF5 raster-extracted locally.',
+    summary_vi: 'Dữ liệu granule NASA CMR thật hoặc giao cắt khung quỹ đạo nhưng chưa trích xuất kiểm chứng lớp raster HDF5.',
+    examples: '29 discovered Mekong granules, 21 unextracted repeat pairs, and 11 regional provinces outside An Giang / Đồng Tháp.',
+    examples_vi: '29 granule trên NASA CMR, 21 cặp lặp lại chưa trích xuất raster và 11 tỉnh/thành ngoài An Giang / Đồng Tháp.',
+  },
+  {
+    id: 'INFERRED',
+    badgeClass: 'ev-inferred',
+    label: 'Inferred',
+    label_vi: 'Suy luận vật lý',
+    summary: 'Plausible radar scattering mechanism suggested by Δγ⁰ shifts; requires independent corroboration before confirmation.',
+    summary_vi: 'Giả thuyết cơ chế tán xạ vật lý phù hợp với xu hướng Δγ⁰; không phải kết luận chắc chắn nếu thiếu dữ liệu kiểm chứng.',
+    examples: '≤−3.0 dB specular smooth-water hypothesis vs ≥+3.0 dB stem–water double-bounce, soil moisture, or tillage.',
+    examples_vi: 'Giả thuyết phản xạ gương nước phẳng (≤−3,0 dB) hoặc phản xạ kép thân cây–nước (≥+3,0 dB), độ ẩm đất, làm đất.',
+  },
+  {
+    id: 'UNAVAILABLE',
+    badgeClass: 'ev-unavailable',
+    label: 'Unavailable',
+    label_vi: 'Không khả dụng',
+    summary: 'Missing, masked off-swath, excluded, or external evidence absent from the prototype (never interpolated or fabricated).',
+    summary_vi: 'Dữ liệu bị thiếu, nằm ngoài dải quét, bị loại trừ hoặc chưa được tích hợp (tuyệt đối không suy diễn hay tạo giả).',
+    examples: 'Đồng Tháp off-swath comparison (mask=255), 1,130 An Giang excluded pixels, HVHV cross-pol, Sentinel-2 NDWI, river gauges, field truth.',
+    examples_vi: 'So sánh tại Đồng Tháp (mask=255), 1.130 điểm ảnh loại trừ ở An Giang, phân cực HVHV, quang học NDWI, trạm thủy văn, thực địa.',
+  },
+];
+
+export interface AreaEvidenceStatus {
+  primaryState: EvidenceStateId;
+  coverageState: EvidenceStateId;
+  comparisonState: EvidenceStateId;
+}
+
+export function getAreaEvidenceStatus(
+  area: StudyAreaId,
+  compatibilityAllPassed: boolean
+): AreaEvidenceStatus {
+  if (area === 'angiang-screening' && compatibilityAllPassed) {
+    return {
+      primaryState: 'VERIFIED',
+      coverageState: 'VERIFIED',
+      comparisonState: 'COMPUTED',
+    };
+  }
+  if (area === 'dongthap-pilot') {
+    return {
+      primaryState: 'VERIFIED',
+      coverageState: 'VERIFIED',
+      comparisonState: 'UNAVAILABLE',
+    };
+  }
+  if (area === 'angiang-screening' && !compatibilityAllPassed) {
+    return {
+      primaryState: 'CANDIDATE',
+      coverageState: 'CANDIDATE',
+      comparisonState: 'UNAVAILABLE',
+    };
+  }
+  return {
+    primaryState: 'CANDIDATE',
+    coverageState: 'UNAVAILABLE',
+    comparisonState: 'UNAVAILABLE',
+  };
+}
+
+export interface GuidedTourAct {
+  id: string;
+  actNumber: number;
+  area: StudyAreaId;
+  beforeConceptId?: string;
+  afterConceptId?: string;
+  overlayLayer: OverlayLayerId;
+  visualizationThreshold?: VisualizationThresholdId;
+  mode: 'explore' | 'research';
+  sectionFilter: 'all' | 'aoi' | 'catalog' | 'compare' | 'interpret' | 'provenance';
+  evidenceHighlight: EvidenceStateId;
+  title: string;
+  title_vi: string;
+  body: string;
+  body_vi: string;
+  takeaway: string;
+  takeaway_vi: string;
+}
+
+export const GUIDED_TOUR_ACTS: ReadonlyArray<GuidedTourAct> = [
+  {
+    id: 'act-1-overview',
+    actNumber: 1,
+    area: 'mekong',
+    overlayLayer: 'change_db',
+    mode: 'explore',
+    sectionFilter: 'all',
+    evidenceHighlight: 'CANDIDATE',
+    title: 'Act 1 · Tropical Blindspot & Tilted Swath Problem',
+    title_vi: 'Chặng 1 · Điểm mù mùa mưa & Bẫy khung bao CMR',
+    body:
+      'Optical satellites fail under monsoon clouds, while 29 NASA CMR NISAR footprints across 13 Mekong provinces are only Candidate polygons tilted against north-up bounding boxes (~37% fill outside the true swath).',
+    body_vi:
+      'Ảnh quang học thường bị mây che vào mùa lũ ĐBSCL, trong khi 29 granule NISAR trên NASA CMR phủ 13 tỉnh mới chỉ là vùng Candidate (khung bao hướng Bắc chứa ~37% điểm trống ngoài dải quét nghiêng).',
+    takeaway: 'Catalog footprint overlap ≠ valid radar coverage.',
+    takeaway_vi: 'Giao cắt khung bao danh mục không đồng nghĩa với có dữ liệu radar hợp lệ.',
+  },
+  {
+    id: 'act-2-before',
+    actNumber: 2,
+    area: 'angiang-screening',
+    beforeConceptId: 'G4404304390-ASF',
+    afterConceptId: 'G4410154671-ASF',
+    overlayLayer: 'before_db',
+    mode: 'explore',
+    sectionFilter: 'all',
+    evidenceHighlight: 'VERIFIED',
+    title: 'Act 2 · Single-Pass Calibrated γ⁰ (Oct 22, 2026)',
+    title_vi: 'Chặng 2 · Quan sát đơn ngày γ⁰ đã hiệu chuẩn (22/10/2026)',
+    body:
+      'Stepping into Tri Tôn / Cô Tô (An Giang), Stage 1 + Stage 2 bounded HDF5 extraction verifies 99.91% valid coverage (mask 1) and computes calibrated 5×5 boxcar HH backscatter (-8.742 dB mean) over canals, paddies, and Núi Tô hills.',
+    body_vi:
+      'Tại cửa sổ Tri Tôn / Cô Tô (An Giang), trích xuất HDF5 giới hạn dung lượng xác thực 99,91% điểm ảnh hợp lệ và tính tán xạ ngược HH sau lọc boxcar 5×5 (trung bình -8,742 dB) qua kênh rạch, đồng ruộng và đồi Núi Tô.',
+    takeaway: '99.91% Verified pixels before any subtraction runs.',
+    takeaway_vi: '99,91% điểm ảnh Đã xác thực trước khi thực hiện mọi phép trừ biến động.',
+  },
+  {
+    id: 'act-3-dongthap',
+    actNumber: 3,
+    area: 'dongthap-pilot',
+    overlayLayer: 'change_db',
+    mode: 'explore',
+    sectionFilter: 'all',
+    evidenceHighlight: 'UNAVAILABLE',
+    title: 'Act 3 · Fail-Closed Off-Swath Proof (Đồng Tháp 0%)',
+    title_vi: 'Chặng 3 · Khóa an toàn ngoài dải quét (Đồng Tháp 0%)',
+    body:
+      'Selecting the adjacent Đồng Tháp pilot box confirms Verified HDF5 inspection of 0% valid pixels (1,212,165 / 1,212,165 mask = 255, HHHH = NaN). Comparison becomes cleanly Unavailable and is blocked at Gates 9–10 rather than fabricated.',
+    body_vi:
+      'Chuyển sang ô thử nghiệm Đồng Tháp cho thấy kiểm tra HDF5 Đã xác thực ghi nhận 0% điểm hợp lệ (100% mask = 255, HHHH = NaN). Chức năng so sánh chuyển sang Không khả dụng và bị Cổng 9–10 chặn trung thực thay vì vẽ giả.',
+    takeaway: '0% valid pixels = blocked comparison, never "zero change".',
+    takeaway_vi: '0% điểm ảnh hợp lệ = khóa so sánh, tuyệt đối không gán nhãn "không đổi".',
+  },
+  {
+    id: 'act-4-swipe',
+    actNumber: 4,
+    area: 'angiang-screening',
+    beforeConceptId: 'G4404304390-ASF',
+    afterConceptId: 'G4410154671-ASF',
+    overlayLayer: 'swipe_before_after',
+    visualizationThreshold: '3.0',
+    mode: 'explore',
+    sectionFilter: 'all',
+    evidenceHighlight: 'COMPUTED',
+    title: 'Act 4 · 12-Day Swipe & Computed Δγ⁰ (+0.417 dB)',
+    title_vi: 'Chặng 4 · Trượt so sánh 12 ngày & Δγ⁰ Đã tính toán (+0,417 dB)',
+    body:
+      'Returning to An Giang activates the interactive Before/After swipe (Oct 22 vs Nov 03, Track 148 Frame 083). Across 120.77 km², 96.13% stayed within ±3.0 dB, 4.39 km² increased ≥+3 dB (SE plots), and 0.29 km² decreased ≤−3 dB.',
+    body_vi:
+      'Quay lại An Giang với thanh trượt Trước/Sau (22/10 vs 03/11, Track 148 Frame 083). Trên 120,77 km², 96,13% ổn định trong ngưỡng ±3,0 dB, 4,39 km² tăng ≥+3 dB ở các ô ruộng Đông Nam và 0,29 km² giảm ≤−3 dB.',
+    takeaway: 'Drag the ⇄ handle on the map to inspect field-scale parcels directly.',
+    takeaway_vi: 'Kéo thanh trượt ⇄ trên bản đồ để đối chiếu trực tiếp từng ô thửa ruộng.',
+  },
+  {
+    id: 'act-5-guardrail',
+    actNumber: 5,
+    area: 'angiang-screening',
+    overlayLayer: 'change_classes',
+    visualizationThreshold: '3.0',
+    mode: 'research',
+    sectionFilter: 'interpret',
+    evidenceHighlight: 'INFERRED',
+    title: 'Act 5 · 5 Evidence States & 3-Level Guardrail',
+    title_vi: 'Chặng 5 · 5 Trạng thái Bằng chứng & Hàng rào 3 Tầng',
+    body:
+      'Research mode separates Level 1 (Verified inputs & Computed Δγ⁰ dB), Level 2 (Inferred hypotheses: specular water vs emergent-stem double-bounce), and Level 3 (Unavailable external NDWI, HVHV, river gauges & field validation).',
+    body_vi:
+      'Chế độ Nghiên cứu tách bạch Tầng 1 (dữ liệu Xác thực & Δγ⁰ Tính toán), Tầng 2 (Suy luận vật lý: mặt nước phản xạ gương vs phản xạ kép lúa ngập), và Tầng 3 (chưa có NDWI, HVHV, mực nước trạm & thực địa).',
+    takeaway: 'Potential Surface Change ≠ unverified binary flood claim.',
+    takeaway_vi: 'Biến động bề mặt tiềm năng không đồng nghĩa khẳng định ngập lụt đơn tuyến.',
+  },
+  {
+    id: 'act-6-gates-receipt',
+    actNumber: 6,
+    area: 'angiang-screening',
+    overlayLayer: 'change_db',
+    visualizationThreshold: 'continuous',
+    mode: 'research',
+    sectionFilter: 'provenance',
+    evidenceHighlight: 'VERIFIED',
+    title: 'Act 6 · 10 Gates, 33.81 MB Budget & Audit Receipt',
+    title_vi: 'Chặng 6 · 10 Cổng kiểm định, Ngân sách 33,81 MB & Phiếu xuất kiểm chứng',
+    body:
+      'Inspect all 10 passed compatibility gates, the 33.81 MB / 250 MB HTTP Range transfer ledger (extracting 120.77 km² from 12.23 GB remote HDF5s), 11 SHA-256 digests, and download a deterministic Screening & Provenance Receipt.',
+    body_vi:
+      'Xem đủ 10/10 cổng tương thích đạt, sổ cái 33,81 MB / 250 MB HTTP Range (từ 12,23 GB HDF5 gốc), 11 mã SHA-256 và tải ngay Phiếu Kiểm định & Nguồn gốc (Markdown / JSON).',
+    takeaway: 'Reproducible zero-backend Earth observation backed by exportable proof.',
+    takeaway_vi: 'Quan sát Trái Đất tái lập được, không cần backend và xuất được biên bản kiểm chứng.',
+  },
+];
+
 export const VALIDATION_NOTE =
   'Verified 2026-10-22 vs 2026-11-03 NISAR_L2_GCOV_V1 pair in the An Giang screening window [104.95, 10.45, 105.05, 10.55]: 99.91% common valid coverage (1,207,740 / 1,208,870 pixels, 120.77 km²) on an identical EPSG:32648 10 m grid.';

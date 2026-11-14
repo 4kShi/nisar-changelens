@@ -254,7 +254,7 @@ Full disclosure is provided in [`docs/AI_USAGE_DISCLOSURE.md`](docs/AI_USAGE_DIS
 - **A. AI-Assisted Development (`YES`)**:
   - **ChatGPT (OpenAI)**: Pre-hackathon brainstorming, Mekong Delta SAR literature synthesis, and 4-step UX ideation.
   - **OpenAI Codex**: Pre-hackathon documentation scaffolding, Earthdata network diagnosis, and bounded HTTP Range budget reader (`pipeline/http_range_budget.py`, `pipeline/extract_mask_pair.py`).
-  - **Google Antigravity (`agy`)**: Hackathon implementation of `pipeline/extract_verified_pair.py`, React/TypeScript/MapLibre UI (`frontend/src/`), bilingual `EN | VI` switcher (`frontend/src/i18n/`), automated tests (`60/60`), standalone scientific QA verification (`docs/FINAL_SCIENTIFIC_QA.md`), browser verification screenshots, and release packaging.
+  - **Google Antigravity (`agy`)**: Hackathon implementation of `pipeline/extract_verified_pair.py`, React/TypeScript/MapLibre UI (`frontend/src/`), bilingual `EN | VI` switcher (`frontend/src/i18n/`), automated tests (`84/84`: `47` Python + `37` Frontend), standalone scientific QA verification (`docs/FINAL_SCIENTIFIC_QA.md`), browser verification screenshots, and release packaging.
 - **B. AI Functionality Inside the Final Product (`NONE` — 100% Deterministic)**:
   - **Zero generative AI, LLM APIs, or machine-learning models run inside NISAR ChangeLens.**
   - All radar calibration, $5\times 5$ boxcar filtering, 10 compatibility gates, and area statistics are deterministic mathematical formulas.
@@ -303,17 +303,17 @@ PYTHONPATH=. python3 pipeline/extract_verified_pair.py
 
 ## 15. Testing and Verification
 
-Run all **76 automated tests** (`43` Python pipeline tests + `33` Frontend Vitest tests across `5` test files) and verify the production build:
+Run all **84 automated tests** (`47` Python pipeline tests + `37` Frontend Vitest tests across `6` test files) and verify the production build:
 
 ```bash
-# 1. Run Python pipeline unit, timeout, byte-budget & SHA-256 integrity tests (43 passed)
+# 1. Run Python pipeline unit, timeout, byte-budget, dynamic resolution & SHA-256 integrity tests (47 passed)
 PYTHONPATH=. pytest -q tests/pipeline
 
-# 2. Run Frontend unit, data-contract, 10-gate, UX & bilingual EN/VI i18n tests (33 passed)
+# 2. Run Frontend unit, data-contract, 10-gate, 5-evidence-state, 6-act tour, receipt & EN/VI i18n tests (37 passed)
 cd frontend
 npm test -- --run
 
-# 3. Verify TypeScript compilation & Vite production build
+# 3. Verify TypeScript compilation & Vite production build (~6.6 MB total dist/)
 npm run build
 ```
 
@@ -341,6 +341,12 @@ We thank **NASA**, the **Indian Space Research Organisation (ISRO)**, and the **
 
 ### Detailed Documentation Index (`docs/`)
 - [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) — Step-by-step installation, local website launch, visual exploration walkthrough, and scientific interpretation guide for new users & judges.
+- [`docs/SUBMISSION.md`](docs/SUBMISSION.md) — Synchronized NASA Space Apps 2026 project submission dossier (`Track 148`, `Frame 083`, `CRID P05036`).
+- [`docs/IMPACT_AND_USE_CASE.md`](docs/IMPACT_AND_USE_CASE.md) & [`docs/CREATIVITY_AND_DIFFERENTIATION.md`](docs/CREATIVITY_AND_DIFFERENTIATION.md) — Focused Upper Mekong Delta surface-anomaly screening workflow & comparative matrix vs. existing SAR/optical/AI approaches.
+- [`docs/SCIENTIFIC_VALIDITY_AUDIT.md`](docs/SCIENTIFIC_VALIDITY_AUDIT.md) & [`docs/NISAR_RELEVANCE.md`](docs/NISAR_RELEVANCE.md) — 5-State Epistemic Evidence taxonomy, metric audit, and NISAR L-band GCOV physics vs. prototype scope matrix.
+- [`docs/PITCH_30_SECONDS.md`](docs/PITCH_30_SECONDS.md), [`docs/PITCH_60_SECONDS.md`](docs/PITCH_60_SECONDS.md), [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md), & [`docs/JUDGE_QA.md`](docs/JUDGE_QA.md) — 30s/60s pitches, 6-Act live demo guide (`EN | VI`), and high-rigor judge Q&A.
+- [`docs/FINAL_SUBMISSION_AUDIT.md`](docs/FINAL_SUBMISSION_AUDIT.md) & [`docs/FINAL_COMPETITION_SCORECARD.md`](docs/FINAL_COMPETITION_SCORECARD.md) — Automated verification audit, Owner pre-portal checklist, and 5-evaluator scorecard comparison.
+- [`docs/SYSTEM_ARCHITECTURE.md`](docs/SYSTEM_ARCHITECTURE.md), [`docs/API_CONTRACTS.md`](docs/API_CONTRACTS.md), & [`docs/TEAM_HANDOFF.md`](docs/TEAM_HANDOFF.md) — Two-stage bounded architecture, Contract `v1.0`, and reproducibility commands.
 - [`docs/GITHUB_RELEASE_AUDIT.md`](docs/GITHUB_RELEASE_AUDIT.md) — Release engineering, security scan, file inclusion/exclusion, and deployment readiness report.
 - [`docs/CONTRIBUTIONS.md`](docs/CONTRIBUTIONS.md) — Official Team `4/K` roster and individual/collaborative contribution audit.
 - [`docs/AI_USAGE_DISCLOSURE.md`](docs/AI_USAGE_DISCLOSURE.md) — Complete disclosure of AI development tools vs. deterministic product logic.

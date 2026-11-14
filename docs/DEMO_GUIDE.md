@@ -18,6 +18,8 @@ npm run preview -- --port 4173 --host 127.0.0.1
 
 Open **`http://127.0.0.1:4173/`** in your browser. The application opens directly into the **Verified An Giang Window (`[104.95, 10.45, 105.05, 10.55]`)** with all 10 compatibility gates passed (`99.91%` common valid pixels).
 
+> **Interactive One-Click Judge Walkthrough**: Click **`▶ 6-Act Judge Tour`** (`EN | VI`) inside the top right-rail banner to step interactively through all 6 acts (Regional Swath Trap $\rightarrow$ Before $\gamma^0$ $\rightarrow$ Đồng Tháp `0%` Off-Swath Block $\rightarrow$ An Giang Swipe $\rightarrow$ 5 Evidence States & 3-Level Guardrail $\rightarrow$ 10 Gates & `.md`/`.json` Screening Receipt). For full spoken scripts & Q&A, see [`docs/DEMO_SCRIPT.md`](DEMO_SCRIPT.md) and [`docs/JUDGE_QA.md`](JUDGE_QA.md).
+
 ---
 
 ## 2. 3-Minute Live Demo Script
