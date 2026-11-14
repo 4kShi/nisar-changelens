@@ -520,118 +520,75 @@ summary:focus-visible {
   color: #fff;
 }
 
-/* Interactive Swipe Comparison Dock on Map */
-.swipe-comparison-dock {
-  position: absolute;
-  right: 12px;
-  bottom: 58px;
-  width: 315px;
-  background: rgba(8, 20, 26, 0.95);
-  border: 1px solid rgba(125, 211, 189, 0.38);
-  border-radius: 9px;
-  padding: 9px;
-  z-index: 3;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
-}
-.swipe-dock-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 6px;
-  margin-bottom: 6px;
-}
-.swipe-dock-header strong {
-  display: block;
-  font-size: 11px;
-  color: #e6f4f1;
-}
-.swipe-sub {
-  display: block;
-  font: 8px var(--mono);
-  color: var(--muted);
-}
-.swipe-badge {
-  font: 8px var(--mono);
-  padding: 2px 5px;
-  border-radius: 4px;
-  background: rgba(16, 185, 129, 0.2);
-  color: #6ee7b7;
-  border: 1px solid rgba(16, 185, 129, 0.4);
-  white-space: nowrap;
-}
-.swipe-viewport {
-  position: relative;
-  width: 100%;
-  height: 215px;
-  border-radius: 6px;
-  overflow: hidden;
-  border: 1px solid rgba(201, 222, 225, 0.2);
-  background: #050d11;
-}
-.swipe-img {
+/* On-map Before / After swipe (verified An Giang pair) */
+.map-compare-host {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  user-select: none;
+  z-index: 1;
+  pointer-events: none;
 }
-.swipe-before-clip {
-  position: absolute;
-  inset: 0;
+.map-compare-host canvas {
+  outline: none;
 }
-.swipe-divider-line {
+.map-swipe-divider {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 2px;
-  background: var(--mint);
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
-  transform: translateX(-1px);
-  pointer-events: none;
+  width: 28px;
+  transform: translateX(-50%);
+  z-index: 2;
+  cursor: ew-resize;
+  touch-action: none;
+  outline: none;
 }
-.swipe-handle {
+.map-swipe-divider::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 3px;
+  transform: translateX(-50%);
+  background: var(--mint);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.85);
+}
+.map-swipe-handle {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 22px;
-  height: 22px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: var(--mint);
   color: #061317;
-  font-size: 11px;
+  font-size: 16px;
   font-weight: 800;
   display: grid;
   place-items: center;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
 }
-.swipe-date-tag {
+.map-swipe-divider:focus-visible .map-swipe-handle {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+.map-swipe-tag {
   position: absolute;
-  bottom: 6px;
-  padding: 2px 6px;
+  top: calc(50% + 26px);
+  padding: 3px 7px;
   border-radius: 4px;
-  background: rgba(6, 15, 20, 0.86);
+  background: rgba(6, 15, 20, 0.88);
   color: #d8ecee;
-  font: 8px var(--mono);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  font: 10px var(--mono);
+  white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  pointer-events: none;
 }
-.swipe-date-tag.left {
-  left: 6px;
+.map-swipe-tag.left {
+  right: calc(50% + 8px);
 }
-.swipe-date-tag.right {
-  right: 6px;
-}
-.swipe-slider-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 6px;
-  font: 9px var(--mono);
-  color: var(--muted);
-}
-.swipe-slider-row input {
-  flex: 1;
-  accent-color: var(--mint);
+.map-swipe-tag.right {
+  left: calc(50% + 8px);
 }
 
 .map-unverified-banner {
@@ -2366,12 +2323,8 @@ summary:focus-visible {
   .legend-caution-line {
     display: none;
   }
-  .swipe-comparison-dock {
-    width: 240px;
-    bottom: 52px;
-  }
-  .swipe-viewport {
-    height: 140px;
+  .map-swipe-tag {
+    font-size: 8px;
   }
   .side-rail {
     overflow: visible;

@@ -150,12 +150,19 @@ export function MapStage({
   const { t, pick } = useI18n();
   const host = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
+  const stageRef = useRef<HTMLElement | null>(null);
+  const compareHost = useRef<HTMLDivElement | null>(null);
+  const compareMapRef = useRef<MapLibreMap | null>(null);
+  const swipeDragging = useRef(false);
   const loadedRef = useRef(false);
   // State (not just the ref) so the sync effects below re-run once layers exist.
   const [mapReady, setMapReady] = useState(false);
   const [basemapWarning, setBasemapWarning] = useState(false);
   // The bundled rasters belong to one specific verified pair in one window.
   const showVerifiedPair = area === 'angiang-screening' && pairVerified;
+  // On-map swipe: BEFORE on the main map (left of the divider), AFTER on a
+  // camera-locked overlay map clipped to the right of the divider.
+  const swipeActive = showVerifiedPair && overlayLayer === 'swipe_before_after';
   const [cursorCoords, setCursorCoords] = useState<{ lng: number; lat: number } | null>(null);
 
   const customClickModeRef = useRef(customClickMode);
@@ -169,6 +176,7 @@ export function MapStage({
       if (mapRef.current && typeof mapRef.current.resize === 'function') {
         mapRef.current.resize();
       }
+      compareMapRef.current?.resize();
     });
     observer.observe(el);
     return () => observer.disconnect();
@@ -493,8 +501,11 @@ export function MapStage({
     if (!map || !mapReady) return;
 
     const showRaster = showVerifiedPair;
+    // In swipe mode the main map carries BEFORE; AFTER lives on the overlay map.
+    // Both sides are drawn fully opaque so neither date bleeds into the other.
     const activeMapLayer =
-      overlayLayer === 'swipe_before_after' ? 'change_db' : overlayLayer;
+      overlayLayer === 'swipe_before_after' ? 'before_db' : overlayLayer;
+    const opacity = overlayLayer === 'swipe_before_after' ? 1 : overlayOpacity;
 
     const allLayerKeys: Array<Exclude<OverlayLayerId, 'swipe_before_after'>> = [
       'before_db',
@@ -511,9 +522,105 @@ export function MapStage({
       if (!map.getLayer(layerId)) continue;
       const isVisible = showRaster && activeMapLayer === key;
       map.setLayoutProperty(layerId, 'visibility', isVisible ? 'visible' : 'none');
-      map.setPaintProperty(layerId, 'raster-opacity', overlayOpacity);
+      map.setPaintProperty(layerId, 'raster-opacity', opacity);
     }
   }, [showVerifiedPair, overlayLayer, overlayOpacity, mapReady]);
+
+  // Swipe overlay map: transparent, non-interactive, AFTER raster only, and
+  // locked to the main map's camera so both dates stay pixel-aligned.
+  useEffect(() => {
+    const main = mapRef.current;
+    const container = compareHost.current;
+    if (!swipeActive || !mapReady || !main || !container) return;
+
+    let compare: MapLibreMap;
+    try {
+      compare = new maplibregl.Map({
+        container,
+        style: {
+          version: 8,
+          sources: {
+            'swipe-after': {
+              type: 'image',
+              url: `${base}${VERIFIED_ANGIANG_PAIR_STATS.overlays.after_db}`,
+              coordinates: VERIFIED_ANGIANG_PAIR_STATS.maplibreCoordinates,
+            },
+          },
+          layers: [
+            {
+              id: 'swipe-after',
+              type: 'raster',
+              source: 'swipe-after',
+              paint: { 'raster-opacity': 1, 'raster-resampling': 'nearest' },
+            },
+          ],
+        },
+        center: main.getCenter(),
+        zoom: main.getZoom(),
+        bearing: main.getBearing(),
+        pitch: main.getPitch(),
+        interactive: false,
+        attributionControl: false,
+      });
+    } catch {
+      return;
+    }
+    compareMapRef.current = compare;
+
+    const sync = () => {
+      compare.jumpTo({
+        center: main.getCenter(),
+        zoom: main.getZoom(),
+        bearing: main.getBearing(),
+        pitch: main.getPitch(),
+      });
+    };
+    main.on('move', sync);
+
+    return () => {
+      main.off('move', sync);
+      compareMapRef.current = null;
+      compare.remove();
+    };
+  }, [swipeActive, mapReady]);
+
+  const percentFromPointer = (clientX: number): number => {
+    const rect = stageRef.current?.getBoundingClientRect();
+    if (!rect || rect.width <= 0) return swipePercent;
+    const pct = ((clientX - rect.left) / rect.width) * 100;
+    return Math.round(Math.min(100, Math.max(0, pct)));
+  };
+
+  const handleSwipePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    swipeDragging.current = true;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    onSwipePercentChange(percentFromPointer(event.clientX));
+  };
+
+  const handleSwipePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!swipeDragging.current) return;
+    onSwipePercentChange(percentFromPointer(event.clientX));
+  };
+
+  const handleSwipePointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    swipeDragging.current = false;
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+  };
+
+  const handleSwipeKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const steps: Record<string, number> = {
+      ArrowLeft: swipePercent - 2,
+      ArrowRight: swipePercent + 2,
+      PageDown: swipePercent - 10,
+      PageUp: swipePercent + 10,
+      Home: 0,
+      End: 100,
+    };
+    if (!(event.key in steps)) return;
+    event.preventDefault();
+    onSwipePercentChange(Math.min(100, Math.max(0, steps[event.key])));
+  };
 
   const activeProvinceInfo = MEKONG_PROVINCES.find((p) => p.name === selectedProvince);
   const isChangeLayerActive =
@@ -534,8 +641,45 @@ export function MapStage({
   };
 
   return (
-    <section className="map-stage" aria-label={t('map.interactiveAria')}>
+    <section ref={stageRef} className="map-stage" aria-label={t('map.interactiveAria')}>
       <div ref={host} className="map-host" />
+
+      {/* On-map Before ↔ After swipe for the verified An Giang pair */}
+      {swipeActive && (
+        <>
+          <div
+            ref={compareHost}
+            className="map-compare-host"
+            style={{ clipPath: `inset(0 0 0 ${swipePercent}%)` }}
+            data-testid="swipe-after-pane"
+            aria-hidden="true"
+          />
+          <div
+            className="map-swipe-divider"
+            style={{ left: `${swipePercent}%` }}
+            role="slider"
+            tabIndex={0}
+            aria-label={t('swipe.dockAria')}
+            aria-orientation="horizontal"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={swipePercent}
+            aria-valuetext={`${t('swipe.splitLabel')} ${swipePercent}%`}
+            data-testid="swipe-divider"
+            onPointerDown={handleSwipePointerDown}
+            onPointerMove={handleSwipePointerMove}
+            onPointerUp={handleSwipePointerEnd}
+            onPointerCancel={handleSwipePointerEnd}
+            onKeyDown={handleSwipeKeyDown}
+          >
+            <span className="map-swipe-handle" aria-hidden="true">
+              ⇄
+            </span>
+            <span className="map-swipe-tag left">◀ {t('swipe.tagLeft')}</span>
+            <span className="map-swipe-tag right">{t('swipe.tagRight')} ▶</span>
+          </div>
+        </>
+      )}
 
       {/* Top-Left Map HUD Toolbar */}
       <div className="map-hud-top" aria-label={t('hud.controlsAria')}>
@@ -681,19 +825,22 @@ export function MapStage({
               </div>
             )}
 
-            <label className="opacity-slider-label">
-              {t('layer.opacity')} {Math.round(overlayOpacity * 100)}%
-              <input
-                type="range"
-                min={0.1}
-                max={1}
-                step={0.05}
-                value={overlayOpacity}
-                onChange={(e) => onOverlayOpacityChange(Number(e.target.value))}
-                aria-label={t('layer.opacityAria')}
-              />
-            </label>
-            {Math.abs(overlayOpacity - 0.9) > 0.01 && (
+            {/* Swipe draws both dates fully opaque, so opacity does not apply there */}
+            {!swipeActive && (
+              <label className="opacity-slider-label">
+                {t('layer.opacity')} {Math.round(overlayOpacity * 100)}%
+                <input
+                  type="range"
+                  min={0.1}
+                  max={1}
+                  step={0.05}
+                  value={overlayOpacity}
+                  onChange={(e) => onOverlayOpacityChange(Number(e.target.value))}
+                  aria-label={t('layer.opacityAria')}
+                />
+              </label>
+            )}
+            {!swipeActive && Math.abs(overlayOpacity - 0.9) > 0.01 && (
               <button
                 type="button"
                 className="opacity-reset-btn"
@@ -705,56 +852,6 @@ export function MapStage({
           </div>
         )}
       </div>
-
-      {/* Synchronized Interactive Before/After Swipe Lens for Verified An Giang Pair */}
-      {showVerifiedPair && overlayLayer === 'swipe_before_after' && (
-        <div className="swipe-comparison-dock" aria-label={t('swipe.dockAria')}>
-          <div className="swipe-dock-header">
-            <div>
-              <strong>{t('swipe.title')}</strong>
-              <span className="swipe-sub">{t('swipe.subtitle')}</span>
-            </div>
-            <span className="swipe-badge">{t('swipe.badge')}</span>
-          </div>
-
-          <div className="swipe-viewport">
-            <img
-              src={`${base}${VERIFIED_ANGIANG_PAIR_STATS.overlays.after_db}`}
-              alt={t('swipe.afterAlt')}
-              className="swipe-img swipe-img-after"
-            />
-            <div
-              className="swipe-before-clip"
-              style={{ clipPath: `inset(0 ${100 - swipePercent}% 0 0)` }}
-            >
-              <img
-                src={`${base}${VERIFIED_ANGIANG_PAIR_STATS.overlays.before_db}`}
-                alt={t('swipe.beforeAlt')}
-                className="swipe-img swipe-img-before"
-              />
-            </div>
-            <div className="swipe-divider-line" style={{ left: `${swipePercent}%` }}>
-              <span className="swipe-handle">⇄</span>
-            </div>
-            <span className="swipe-date-tag left">{t('swipe.tagLeft')}</span>
-            <span className="swipe-date-tag right">{t('swipe.tagRight')}</span>
-          </div>
-
-          <div className="swipe-slider-row">
-            <label htmlFor="map-swipe-slider">
-              {t('swipe.splitLabel')} ({swipePercent}%)
-            </label>
-            <input
-              id="map-swipe-slider"
-              type="range"
-              min={0}
-              max={100}
-              value={swipePercent}
-              onChange={(e) => onSwipePercentChange(Number(e.target.value))}
-            />
-          </div>
-        </div>
-      )}
 
       {/* Verified window, but the selected pair failed the gates: keep the bundled rasters hidden */}
       {area === 'angiang-screening' && !pairVerified && (
@@ -843,7 +940,9 @@ export function MapStage({
 
         {showVerifiedPair && (
           <div className="map-color-scale" aria-label={t('legend.radioAria')}>
-            {overlayLayer === 'before_db' || overlayLayer === 'after_db' ? (
+            {overlayLayer === 'before_db' ||
+            overlayLayer === 'after_db' ||
+            overlayLayer === 'swipe_before_after' ? (
               <div className="legend-scale-row">
                 <span>
                   {t('legend.backscatterPrefix')} <strong>{t('legend.backscatterLow')}</strong>

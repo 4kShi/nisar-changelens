@@ -5,25 +5,52 @@ import { discoverCompatiblePairs } from '../data/study';
 
 // A maplibre-gl mock that records layers and their layout visibility, and lets
 // the test fire the 'load' event (the simpler mocks elsewhere never load).
+type MockMapInstance = {
+  options: { style?: { layers?: Array<{ id: string }> } };
+  handlers: Record<string, Array<(e?: unknown) => unknown>>;
+  layers: Map<string, { visibility: string }>;
+  removed: boolean;
+};
+
 const mapState = vi.hoisted(() => ({
-  instance: null as null | {
-    handlers: Record<string, Array<(e?: unknown) => unknown>>;
-    layers: Map<string, { visibility: string }>;
+  instances: [] as MockMapInstance[],
+  get instance(): MockMapInstance | null {
+    return this.instances[0] ?? null;
   },
 }));
 
 vi.mock('maplibre-gl', () => {
   class MockMap {
+    options: MockMapInstance['options'];
     handlers: Record<string, Array<(e?: unknown) => unknown>> = {};
     layers = new Map<string, { visibility: string }>();
     sources = new Map<string, { setData: () => void }>();
-    constructor() {
-      mapState.instance = this;
+    removed = false;
+    constructor(options: MockMapInstance['options']) {
+      this.options = options;
+      mapState.instances.push(this);
     }
     on(event: string, handler: (e?: unknown) => unknown) {
       (this.handlers[event] ??= []).push(handler);
       return this;
     }
+    off(event: string, handler: (e?: unknown) => unknown) {
+      this.handlers[event] = (this.handlers[event] ?? []).filter((h) => h !== handler);
+      return this;
+    }
+    getCenter() {
+      return { lng: 105, lat: 10.5 };
+    }
+    getZoom() {
+      return 10.4;
+    }
+    getBearing() {
+      return 0;
+    }
+    getPitch() {
+      return 0;
+    }
+    jumpTo() {}
     addSource(id: string) {
       this.sources.set(id, { setData: () => {} });
     }
@@ -46,7 +73,9 @@ vi.mock('maplibre-gl', () => {
     queryRenderedFeatures() {
       return [];
     }
-    remove() {}
+    remove() {
+      this.removed = true;
+    }
     addControl() {}
     resize() {}
   }
@@ -85,7 +114,7 @@ async function renderAndLoadMap() {
 describe('Map raster gating', () => {
   beforeEach(() => {
     window.localStorage.clear();
-    mapState.instance = null;
+    mapState.instances.length = 0;
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => ({
@@ -132,5 +161,44 @@ describe('Map raster gating', () => {
     fireEvent.click(within(screen.getByTestId('pair-blocked-banner')).getByRole('button'));
     expect(visibleRasters()).toEqual(['raster-change_db']);
     expect(screen.queryByTestId('pair-blocked-banner')).not.toBeInTheDocument();
+  });
+
+  it('swipe mode puts BEFORE on the main map and a clipped AFTER-only map on the right', async () => {
+    await renderAndLoadMap();
+    fireEvent.click(screen.getByTestId('map-view-swipe'));
+
+    // Main map shows only BEFORE; a second map holds only the AFTER raster.
+    expect(visibleRasters()).toEqual(['raster-before_db']);
+    expect(mapState.instances).toHaveLength(2);
+    const compare = mapState.instances[1];
+    expect(compare.options.style?.layers?.map((l) => l.id)).toEqual(['swipe-after']);
+
+    // The AFTER pane is clipped at the divider, which is keyboard operable.
+    const pane = screen.getByTestId('swipe-after-pane');
+    const divider = screen.getByTestId('swipe-divider');
+    expect(pane.style.clipPath).toBe('inset(0px 0px 0px 50%)');
+    expect(divider).toHaveAttribute('aria-valuenow', '50');
+    fireEvent.keyDown(divider, { key: 'ArrowRight' });
+    expect(pane.style.clipPath).toBe('inset(0px 0px 0px 52%)');
+    fireEvent.keyDown(divider, { key: 'Home' });
+    expect(divider).toHaveAttribute('aria-valuenow', '0');
+
+    // Leaving swipe mode tears the overlay map down.
+    fireEvent.click(screen.getByTestId('map-view-before'));
+    expect(compare.removed).toBe(true);
+    expect(screen.queryByTestId('swipe-divider')).not.toBeInTheDocument();
+  });
+
+  it('does not offer the swipe for a pair that failed the gates', async () => {
+    await renderAndLoadMap();
+    fireEvent.click(screen.getByTestId('map-view-swipe'));
+    const unverified = discoverCompatiblePairs('angiang-screening').find(
+      (p) => !p.hasLocalVerifiedRasterInAnGiang
+    );
+    fireEvent.click(screen.getByTestId(`load-pair-${unverified!.id}`));
+
+    expect(screen.queryByTestId('swipe-divider')).not.toBeInTheDocument();
+    expect(visibleRasters()).toEqual([]);
+    expect(mapState.instances[1].removed).toBe(true);
   });
 });

@@ -173,9 +173,9 @@ Click **`CHANGE MAP (ΔdB)`** to view the pixel-by-pixel backscatter difference 
 - **Red areas (`≥ +3 dB`)**: Radar backscatter increased (`4.39 km²` / `3.63%`).
 
 ### 8. Test `BEFORE ↔ AFTER SWIPE`
-Click **`BEFORE ↔ AFTER SWIPE`** to open the synchronized split-screen lens on the map. Drag the **Swipe Split slider (`0%–100%`)** back and forth to compare the exact October 22 and November 3 radar textures side-by-side.
+Click **`BEFORE ↔ AFTER SWIPE`** to split the map itself: October 22 (Before) is on the left of the divider and November 3 (After) on the right. Drag the round **⇄** handle left and right (or focus it and use the arrow keys, `Home` / `End`) to reveal where the surface changed. You can zoom and pan while swiping; both dates stay pixel-aligned.
 
-![English Interface with Before After Swipe Dock](screenshots/09_english_interface.png)
+![English Interface with the on-map Before / After swipe](screenshots/09_english_interface.png)
 
 ### 9. Switch Exploratory Change Thresholds (`±2.0 dB`, `±3.0 dB`, `±4.0 dB`)
 In the **Change View Style** bar (on the map HUD or in Section 3), compare:

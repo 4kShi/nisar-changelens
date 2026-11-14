@@ -142,7 +142,7 @@ Complete set of 11 verified UX & Scientific Comparison screenshots in [`docs/scr
 - [`06_change_visualization.png`](docs/screenshots/06_change_visualization.png) — **Change Map ($\Delta\text{dB}$)** with threshold controls (`Continuous`, `±2.0 dB`, `±3.0 dB Reference`, `±4.0 dB`) and diverging colorbar.
 - [`07_compatibility_failure_explore.png`](docs/screenshots/07_compatibility_failure_explore.png) — Simplified plain-language compatibility explanation in **Explore** mode.
 - [`08_compatibility_report_research.png`](docs/screenshots/08_compatibility_report_research.png) — Detailed 10-Gate Compatibility Report & CRID Policy (`P05036` vs `P05023`) in **Research** mode.
-- [`09_english_interface.png`](docs/screenshots/09_english_interface.png) — **English (`EN`)** interface with interactive Before $\leftrightarrow$ After Swipe dock.
+- [`09_english_interface.png`](docs/screenshots/09_english_interface.png) — **English (`EN`)** interface with the on-map Before $\leftrightarrow$ After swipe divider (drag to compare `2026-10-22` and `2026-11-03`).
 - [`10_vietnamese_interface.png`](docs/screenshots/10_vietnamese_interface.png) — **Vietnamese (`VI`)** localized interface (`Khám phá` & `Tóm tắt biến động bề mặt qua Radar`).
 - [`11_mobile_responsive.png`](docs/screenshots/11_mobile_responsive.png) — **Mobile Responsive (`390x844`)** stacked layout.
 

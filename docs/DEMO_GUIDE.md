@@ -45,8 +45,8 @@ Open **`http://127.0.0.1:4173/`** in your browser. The application opens directl
 1. **Click `An Giang Verified AOI` (or `Reset Selection`)**:
    - The map flies back to `[104.95, 10.45, 105.05, 10.55]` (`120.89 km²` window in Tri Tôn / Cô Tô, An Giang).
    - Both **October 22, 2026 (`G4404304390-ASF`)** and **November 3, 2026 (`G4410154671-ASF`)** (`NISAR_L2_GCOV_V1`, Track 148, Frame 083, Descending, Left-looking, CRID `P05036` v1.0.20) are verified on an identical `EPSG:32648` 10 m grid (`1105 × 1094` pixels) with **1,207,740 / 1,208,870 jointly valid pixels (`99.91%`)**.
-2. **Interact with the Before/After Swipe Dock & Layer Bar**:
-   - Drag the **Before/After Swipe Slider** between `2026-10-22` (Mean $\gamma^0 = -8.742\text{ dB}$) and `2026-11-03` (Mean $\gamma^0 = -8.325\text{ dB}$).
+2. **Interact with the on-map Before/After Swipe & Layer Bar**:
+   - Click `BEFORE ↔ AFTER SWIPE` and drag the **⇄** divider across the map between `2026-10-22` (Mean $\gamma^0 = -8.742\text{ dB}$) and `2026-11-03` (Mean $\gamma^0 = -8.325\text{ dB}$).
    - Switch the map overlay between `Oct 22 γ⁰ (dB)`, `Nov 03 γ⁰ (dB)`, `Continuous Δγ⁰ (dB)`, `Classified ±3.0 dB`, and `Valid Mask (99.91%)`.
    - Point out the rectangular agricultural parcels in the southeast where $\Delta\gamma^0 \ge +3.0\text{ dB}$ (`4.39 km²`, `3.63%`) and localized decreases $\le -3.0\text{ dB}$ (`0.29 km²`, `0.24%`), while `96.13%` (`116.09 km²`) remained stable within $\pm 3.0\text{ dB}$.
 
