@@ -453,8 +453,10 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
         <section className="map-column" aria-label={t('map.workspaceAria')}>
           <div className="map-toolbar">
             <div>
-              <span className="eyebrow">
-                {pick(activeArea.evidenceBadge, activeArea.evidenceBadge_vi)}
+              <span className="eyebrow" data-testid="area-evidence-badge">
+                {area === 'angiang-screening' && !compatibility.allPassed
+                  ? t('map.pairPendingBadge')
+                  : pick(activeArea.evidenceBadge, activeArea.evidenceBadge_vi)}
               </span>
               <h1>{pick(activeArea.label, activeArea.label_vi)}</h1>
               <p>{pick(activeArea.description, activeArea.description_vi)}</p>
@@ -489,6 +491,7 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
             customClickMode={customClickMode}
             showFootprints={showFootprints}
             highlightedConceptIds={[beforeConceptId, afterConceptId]}
+            pairVerified={compatibility.allPassed}
             overlayLayer={overlayLayer}
             overlayOpacity={overlayOpacity}
             swipePercent={swipePercent}
@@ -615,7 +618,7 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
               {mode === 'explore' && (
                 <div
                   className={`location-availability-pill ${
-                    area === 'angiang-screening'
+                    area === 'angiang-screening' && compatibility.allPassed
                       ? 'loc-ready'
                       : area === 'dongthap-pilot'
                         ? 'loc-offswath'
@@ -623,7 +626,9 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
                   }`}
                 >
                   {area === 'angiang-screening'
-                    ? t('explore.sec1.statusReady')
+                    ? compatibility.allPassed
+                      ? t('explore.sec1.statusReady')
+                      : t('explore.sec1.statusPairPending')
                     : area === 'dongthap-pilot'
                       ? t('explore.sec1.statusOffSwath')
                       : t('explore.sec1.statusCatalog')}

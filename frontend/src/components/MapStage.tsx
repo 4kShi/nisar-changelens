@@ -27,6 +27,8 @@ interface MapStageProps {
   customClickMode: boolean;
   showFootprints: boolean;
   highlightedConceptIds: string[];
+  /** True only when the selected before/after pair passed all compatibility gates. */
+  pairVerified: boolean;
   overlayLayer: OverlayLayerId;
   overlayOpacity: number;
   swipePercent: number;
@@ -126,6 +128,7 @@ export function MapStage({
   customClickMode,
   showFootprints,
   highlightedConceptIds,
+  pairVerified,
   overlayLayer,
   overlayOpacity,
   swipePercent,
@@ -148,7 +151,11 @@ export function MapStage({
   const host = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const loadedRef = useRef(false);
+  // State (not just the ref) so the sync effects below re-run once layers exist.
+  const [mapReady, setMapReady] = useState(false);
   const [basemapWarning, setBasemapWarning] = useState(false);
+  // The bundled rasters belong to one specific verified pair in one window.
+  const showVerifiedPair = area === 'angiang-screening' && pairVerified;
   const [cursorCoords, setCursorCoords] = useState<{ lng: number; lat: number } | null>(null);
 
   const customClickModeRef = useRef(customClickMode);
@@ -340,6 +347,8 @@ export function MapStage({
             id: item.id,
             type: 'raster',
             source: item.id,
+            // Hidden until the visibility sync effect selects exactly one layer.
+            layout: { visibility: 'none' },
             paint: {
               'raster-opacity': 0.88,
               'raster-resampling': 'nearest',
@@ -384,16 +393,19 @@ export function MapStage({
           id: 'custom-bbox-fill',
           type: 'fill',
           source: 'custom-bbox',
+          layout: { visibility: 'none' },
           paint: { 'fill-color': '#a855f7', 'fill-opacity': 0.12 },
         });
         map.addLayer({
           id: 'custom-bbox-line',
           type: 'line',
           source: 'custom-bbox',
+          layout: { visibility: 'none' },
           paint: { 'line-color': '#c084fc', 'line-width': 2.2, 'line-dasharray': [2, 2] },
         });
 
         loadedRef.current = true;
+        setMapReady(true);
         onMapStateChange('ready');
       } catch {
         if (active) onMapStateChange('boundary-error');
@@ -403,22 +415,29 @@ export function MapStage({
     return () => {
       active = false;
       loadedRef.current = false;
+      setMapReady(false);
       map.remove();
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Sync camera & AOI visibility when study area changes
+  // Sync custom AOI visibility (also runs once when the map becomes ready)
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !loadedRef.current) return;
-
+    if (!map || !mapReady) return;
     const customVis = area === 'custom-aoi' ? 'visible' : 'none';
     if (map.getLayer('custom-bbox-fill')) {
       map.setLayoutProperty('custom-bbox-fill', 'visibility', customVis);
       map.setLayoutProperty('custom-bbox-line', 'visibility', customVis);
     }
+  }, [area, mapReady]);
+
+  // Fly the camera when the study area changes (not on initial load: the
+  // constructor already sets the starting view)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loadedRef.current) return;
 
     if (area === 'angiang-screening') {
       map.flyTo({ center: [105.0, 10.5], zoom: 11.2, duration: 850 });
@@ -435,28 +454,28 @@ export function MapStage({
   // Sync selected province highlight
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !loadedRef.current || !map.getLayer('selected-province-fill')) return;
+    if (!map || !mapReady || !map.getLayer('selected-province-fill')) return;
     map.setFilter('selected-province-fill', [
       '==',
       ['get', 'shapeName'],
       selectedProvince,
     ] as unknown as maplibregl.FilterSpecification);
-  }, [selectedProvince]);
+  }, [selectedProvince, mapReady]);
 
   // Sync custom bbox GeoJSON source
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !loadedRef.current) return;
+    if (!map || !mapReady) return;
     const src = map.getSource('custom-bbox') as maplibregl.GeoJSONSource | undefined;
     if (src) {
       src.setData(bboxToGeoJsonFeature(customBbox, 'Custom User AOI'));
     }
-  }, [customBbox]);
+  }, [customBbox, mapReady]);
 
   // Sync granule footprints visibility and highlighted granules
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !loadedRef.current) return;
+    if (!map || !mapReady) return;
     const src = map.getSource('granule-footprints') as maplibregl.GeoJSONSource | undefined;
     if (src) {
       src.setData(buildFootprintsGeoJson(highlightedConceptIds));
@@ -466,14 +485,14 @@ export function MapStage({
       map.setLayoutProperty('granule-footprints-fill', 'visibility', vis);
       map.setLayoutProperty('granule-footprints-line', 'visibility', vis);
     }
-  }, [showFootprints, highlightedConceptIds]);
+  }, [showFootprints, highlightedConceptIds, mapReady]);
 
   // Sync verified An Giang raster layer visibility & opacity
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !loadedRef.current) return;
+    if (!map || !mapReady) return;
 
-    const showRaster = area === 'angiang-screening';
+    const showRaster = showVerifiedPair;
     const activeMapLayer =
       overlayLayer === 'swipe_before_after' ? 'change_db' : overlayLayer;
 
@@ -494,7 +513,7 @@ export function MapStage({
       map.setLayoutProperty(layerId, 'visibility', isVisible ? 'visible' : 'none');
       map.setPaintProperty(layerId, 'raster-opacity', overlayOpacity);
     }
-  }, [area, overlayLayer, overlayOpacity]);
+  }, [showVerifiedPair, overlayLayer, overlayOpacity, mapReady]);
 
   const activeProvinceInfo = MEKONG_PROVINCES.find((p) => p.name === selectedProvince);
   const isChangeLayerActive =
@@ -523,16 +542,19 @@ export function MapStage({
         <div className="map-hud-badges">
           <span
             className={`hud-tier-pill ${
-              area === 'angiang-screening'
+              showVerifiedPair
                 ? 'tier-verified'
                 : area === 'dongthap-pilot'
                   ? 'tier-rejected'
                   : 'tier-catalog'
             }`}
+            data-testid="hud-tier-pill"
           >
-            {area === 'angiang-screening'
+            {showVerifiedPair
               ? t('hud.tier4Verified')
-              : area === 'dongthap-pilot'
+              : area === 'angiang-screening'
+                ? t('hud.tierPairPending')
+                : area === 'dongthap-pilot'
                 ? t('hud.tier2Rejected')
                 : area === 'custom-aoi'
                   ? t('hud.tierCustom')
@@ -585,8 +607,8 @@ export function MapStage({
           </button>
         </div>
 
-        {/* Prominent Visual Layer Bar when Verified An Giang AOI is active */}
-        {area === 'angiang-screening' && (
+        {/* Prominent Visual Layer Bar when the verified An Giang pair is active */}
+        {showVerifiedPair && (
           <div className="map-layer-bar" role="group" aria-label={t('layer.groupAria')}>
             <span className="layer-bar-label">{t('primaryLayer.label')}</span>
             <button
@@ -685,7 +707,7 @@ export function MapStage({
       </div>
 
       {/* Synchronized Interactive Before/After Swipe Lens for Verified An Giang Pair */}
-      {area === 'angiang-screening' && overlayLayer === 'swipe_before_after' && (
+      {showVerifiedPair && overlayLayer === 'swipe_before_after' && (
         <div className="swipe-comparison-dock" aria-label={t('swipe.dockAria')}>
           <div className="swipe-dock-header">
             <div>
@@ -731,6 +753,16 @@ export function MapStage({
               onChange={(e) => onSwipePercentChange(Number(e.target.value))}
             />
           </div>
+        </div>
+      )}
+
+      {/* Verified window, but the selected pair failed the gates: keep the bundled rasters hidden */}
+      {area === 'angiang-screening' && !pairVerified && (
+        <div className="map-unverified-banner" role="status" data-testid="pair-blocked-banner">
+          <strong>{t('banner.pairBlockedTitle')}</strong> {t('banner.pairBlockedBody')}{' '}
+          <button type="button" className="inline-link-btn" onClick={onResetSelection}>
+            {t('sec3.restoreBtn')}
+          </button>
         </div>
       )}
 
@@ -809,7 +841,7 @@ export function MapStage({
           </div>
         </div>
 
-        {area === 'angiang-screening' && (
+        {showVerifiedPair && (
           <div className="map-color-scale" aria-label={t('legend.radioAria')}>
             {overlayLayer === 'before_db' || overlayLayer === 'after_db' ? (
               <div className="legend-scale-row">
