@@ -287,15 +287,15 @@ PYTHONPATH=. python3 pipeline/extract_verified_pair.py
 
 ## 15. Testing and Verification
 
-Run all **60 automated tests** (`43` Python pipeline tests + `17` Frontend Vitest tests) and verify the production build:
+Run all **68 automated tests** (`43` Python pipeline tests + `25` Frontend Vitest tests across `4` test files) and verify the production build:
 
 ```bash
 # 1. Run Python pipeline unit, timeout, byte-budget & SHA-256 integrity tests (43 passed)
 PYTHONPATH=. pytest -q tests/pipeline
 
-# 2. Run Frontend unit, data-contract, 10-gate & bilingual EN/VI i18n tests (17 passed)
+# 2. Run Frontend unit, data-contract, 10-gate, UX & bilingual EN/VI i18n tests (25 passed)
 cd frontend
-npm test
+npm test -- --run
 
 # 3. Verify TypeScript compilation & Vite production build
 npm run build
