@@ -1,0 +1,138 @@
+{
+  "mode": "MASK_ONLY",
+  "task_id": "4K-COVERAGE-01-angiang-mask-only-v1",
+  "data_availability_status": "UNAVAILABLE_UNTIL_MASK_PAIR_RETRIEVAL_AND_ALIGNMENT_ARE_VERIFIED",
+  "provider": "ASF",
+  "collection": "NISAR_L2_GCOV_V1",
+  "bbox_wgs84": [
+    104.95,
+    10.45,
+    105.05,
+    10.55
+  ],
+  "granules": [
+    {
+      "granule": "NISAR_L2_PR_GCOV_033_148_D_083_4005_DHDH_A_20261022T113140_20261022T113214_P05036_N_F_J_001",
+      "concept_id": "G4404304390-ASF",
+      "dataset": "/science/LSAR/GCOV/grids/frequencyA/mask"
+    },
+    {
+      "granule": "NISAR_L2_PR_GCOV_034_148_D_083_4005_DHDH_A_20261103T113137_20261103T113215_P05036_N_F_J_001",
+      "concept_id": "G4410154671-ASF",
+      "dataset": "/science/LSAR/GCOV/grids/frequencyA/mask"
+    }
+  ],
+  "shared_response_body_budget_bytes": 250000000,
+  "concurrency": 1,
+  "automatic_retry_policy": "at most 1 retry for transport timeout/error or HTTP 5xx with 0.5s exponential delay; never retry auth, 416, or protocol errors; partial bytes stay charged",
+  "checkpoint_integrity": "unkeyed SHA256 detects accidental corruption only; it is not tamper-proof or authentic",
+  "range_timeout_seconds": 30,
+  "stage_timeout_seconds": 90,
+  "change_analysis": false,
+  "sensitive_backscatter_datasets_read": false,
+  "execute_requires_explicit_flag": true,
+  "status": "MASK_COVERAGE_READ",
+  "measured_response_body_bytes": 1149959,
+  "remaining_budget_bytes": 248850041,
+  "observations": [
+    {
+      "granule": "NISAR_L2_PR_GCOV_033_148_D_083_4005_DHDH_A_20261022T113140_20261022T113214_P05036_N_F_J_001",
+      "concept_id": "G4404304390-ASF",
+      "dataset": "/science/LSAR/GCOV/grids/frequencyA/mask",
+      "full_grid_shape": [
+        33192,
+        33912
+      ],
+      "shape": [
+        1105,
+        1094
+      ],
+      "window_row_col": [
+        19962,
+        21067,
+        24469,
+        25563
+      ],
+      "projection": "32648",
+      "pixel_spacing_m": [
+        10.0,
+        10.0
+      ],
+      "window_coordinates_center_m": {
+        "x_first": 494535.0,
+        "x_last": 505465.0,
+        "y_first": 1166215.0,
+        "y_last": 1155175.0
+      },
+      "coordinate_axis_checksums": {
+        "x_sha256": "84594b164d89af8ed1bb0ad822a61e04b356b27d8dd6979ff10bbb211d7791d3",
+        "y_sha256": "63dfeea6a6a9d66332a2452004f8b43d17beaba8a31845bcff80d716d3f96852"
+      },
+      "mask_counts": {
+        "0": 1084,
+        "1": 1207786
+      },
+      "valid_pixels": 1207786,
+      "valid_fraction": 0.9991032948125108
+    },
+    {
+      "granule": "NISAR_L2_PR_GCOV_034_148_D_083_4005_DHDH_A_20261103T113137_20261103T113215_P05036_N_F_J_001",
+      "concept_id": "G4410154671-ASF",
+      "dataset": "/science/LSAR/GCOV/grids/frequencyA/mask",
+      "full_grid_shape": [
+        33192,
+        33912
+      ],
+      "shape": [
+        1105,
+        1094
+      ],
+      "window_row_col": [
+        19962,
+        21067,
+        24469,
+        25563
+      ],
+      "projection": "32648",
+      "pixel_spacing_m": [
+        10.0,
+        10.0
+      ],
+      "window_coordinates_center_m": {
+        "x_first": 494535.0,
+        "x_last": 505465.0,
+        "y_first": 1166215.0,
+        "y_last": 1155175.0
+      },
+      "coordinate_axis_checksums": {
+        "x_sha256": "84594b164d89af8ed1bb0ad822a61e04b356b27d8dd6979ff10bbb211d7791d3",
+        "y_sha256": "63dfeea6a6a9d66332a2452004f8b43d17beaba8a31845bcff80d716d3f96852"
+      },
+      "mask_counts": {
+        "0": 1090,
+        "1": 1207780
+      },
+      "valid_pixels": 1207780,
+      "valid_fraction": 0.999098331499665
+    }
+  ],
+  "common_valid_pixels": 1207740,
+  "common_valid_fraction": 0.9990652427473591,
+  "grid_alignment_verified": true,
+  "output_files": [
+    {
+      "bytes": 7397,
+      "sha256": "af0eba4063a97602bd51e669e7838eae5df612e6a1c65cab85017adec86de935",
+      "path": "data/raw/nisar_subsets/angiang_mask_only_4K-COVERAGE-01-angiang-mask-only-v1/20261022_mask.tif"
+    },
+    {
+      "bytes": 7400,
+      "sha256": "01b7d9bf7289bdb331bfb10584ee74c89528762ca059716f8358cecd05b72bcb",
+      "path": "data/raw/nisar_subsets/angiang_mask_only_4K-COVERAGE-01-angiang-mask-only-v1/20261103_mask.tif"
+    }
+  ],
+  "measured_response_body_accounting": "HTTP response body bytes yielded by guarded aiohttp content stream; excludes headers, TLS/IP overhead and lower-layer buffering",
+  "range_checkpoint_state": "data/metadata/range_checkpoints/4K-COVERAGE-01-angiang-mask-only-v1/state.json",
+  "outputs": [],
+  "manifest": "data/raw/nisar_subsets/angiang_mask_only_4K-COVERAGE-01-angiang-mask-only-v1/mask_coverage_manifest.json"
+}

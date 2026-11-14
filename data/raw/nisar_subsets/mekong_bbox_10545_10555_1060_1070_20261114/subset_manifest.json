@@ -1,0 +1,162 @@
+{
+  "bbox_wgs84": [
+    105.45,
+    10.6,
+    105.55,
+    10.7
+  ],
+  "method": "authenticated remote HDF5 hyperslab extraction; no change calculation",
+  "cap_bytes": 250000000,
+  "estimated_uncompressed_outputs_bytes": 21818970,
+  "files": [
+    {
+      "name": "2026-10-22_HHHH.tif",
+      "bytes": 20376,
+      "sha256": "56d898a9d367f8a0eecec306e450179fc164acb7e5567d3e20fc611e2fdb0765",
+      "dtype": "float32",
+      "shape": [
+        1107,
+        1095
+      ]
+    },
+    {
+      "name": "2026-10-22_mask.tif",
+      "bytes": 4696,
+      "sha256": "db227370ea0df174ed0564c81cb6c0a53b9169a40bea81f27d5a1320955c73e6",
+      "dtype": "uint8",
+      "shape": [
+        1107,
+        1095
+      ]
+    },
+    {
+      "name": "2026-10-22_numberOfLooks.tif",
+      "bytes": 20385,
+      "sha256": "af7ded10d0d76a110ad81fdf52d5878472519881e535764d0698580e992c6c52",
+      "dtype": "float32",
+      "shape": [
+        1107,
+        1095
+      ]
+    },
+    {
+      "name": "2026-11-03_HHHH.tif",
+      "bytes": 20376,
+      "sha256": "eb7996499560cb79cab4d9b917441ee915ea8609a07e88be5bde334268375dce",
+      "dtype": "float32",
+      "shape": [
+        1107,
+        1095
+      ]
+    },
+    {
+      "name": "2026-11-03_mask.tif",
+      "bytes": 4696,
+      "sha256": "e8ae9d7a427051706a459dbd2e0b6caefe963a4435638bcbe0e7a911d3f5c148",
+      "dtype": "uint8",
+      "shape": [
+        1107,
+        1095
+      ]
+    },
+    {
+      "name": "2026-11-03_numberOfLooks.tif",
+      "bytes": 20385,
+      "sha256": "b72c66d2bb9889256127d7b98cf07cfc40cdc4333d1a7a3468f9fdefb2c041ec",
+      "dtype": "float32",
+      "shape": [
+        1107,
+        1095
+      ]
+    }
+  ],
+  "granules": [
+    {
+      "concept_id": "G4404304390-ASF",
+      "native_id": "NISAR_L2_PR_GCOV_033_148_D_083_4005_DHDH_A_20261022T113140_20261022T113214_P05036_N_F_J_001",
+      "acquisition_date": "2026-10-22",
+      "projection_epsg": 32648,
+      "window_indices": [
+        18298,
+        19405,
+        29937,
+        31032
+      ],
+      "transform": [
+        10.0,
+        0.0,
+        549210.0,
+        0.0,
+        -10.0,
+        1182860.0
+      ],
+      "pixel_convention": "center",
+      "spacing_m": [
+        10.0,
+        -10.0
+      ],
+      "measurement": {
+        "dataset": "/science/LSAR/GCOV/grids/frequencyA/HHHH",
+        "units": "1",
+        "semantics": "linear gamma0 power from GCOV"
+      },
+      "mask_semantics": "Mask indicating the subswath number associated with valid GCOV samples. A GCOV sample is only considered valid if it is generated from fully-focused radar samples. If at least one radar sample in the averaging set is partially focused or invalid, the corresponding mask pixel will contain the value 0. GCOV pixels outside of the radar acquisition extent are filled with the value 255",
+      "stats": {
+        "window_shape": [
+          1107,
+          1095
+        ],
+        "mask_value_counts": {
+          "255": 1212165
+        },
+        "hh_valid_positive_finite_pixels": 0,
+        "hh_total_pixels": 1212165,
+        "hh_nan_pixels": 1212165
+      }
+    },
+    {
+      "concept_id": "G4410154671-ASF",
+      "native_id": "NISAR_L2_PR_GCOV_034_148_D_083_4005_DHDH_A_20261103T113137_20261103T113215_P05036_N_F_J_001",
+      "acquisition_date": "2026-11-03",
+      "projection_epsg": 32648,
+      "window_indices": [
+        18298,
+        19405,
+        29937,
+        31032
+      ],
+      "transform": [
+        10.0,
+        0.0,
+        549210.0,
+        0.0,
+        -10.0,
+        1182860.0
+      ],
+      "pixel_convention": "center",
+      "spacing_m": [
+        10.0,
+        -10.0
+      ],
+      "measurement": {
+        "dataset": "/science/LSAR/GCOV/grids/frequencyA/HHHH",
+        "units": "1",
+        "semantics": "linear gamma0 power from GCOV"
+      },
+      "mask_semantics": "Mask indicating the subswath number associated with valid GCOV samples. A GCOV sample is only considered valid if it is generated from fully-focused radar samples. If at least one radar sample in the averaging set is partially focused or invalid, the corresponding mask pixel will contain the value 0. GCOV pixels outside of the radar acquisition extent are filled with the value 255",
+      "stats": {
+        "window_shape": [
+          1107,
+          1095
+        ],
+        "mask_value_counts": {
+          "255": 1212165
+        },
+        "hh_valid_positive_finite_pixels": 0,
+        "hh_total_pixels": 1212165,
+        "hh_nan_pixels": 1212165
+      }
+    }
+  ],
+  "remote_bytes_read_through_h5py": 1369832
+}

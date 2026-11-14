@@ -1,0 +1,18 @@
+status = "preparation-only; uninstalled candidate inventory, not a lockfile"
+version_policy = "Select compatible exact releases and runtime versions during authorized hackathon; review licenses and commit locks before claiming reproducibility."
+
+[frontend]
+runtime = "Node.js version meeting selected Vite requirements; package manager pinned then"
+packages = ["react", "react-dom", "typescript", "vite", "@vitejs/plugin-react", "maplibre-gl"]
+versions = "not selected or tested"
+
+[private_processing]
+runtime = "Python in project-local environment; exact supported version selected then"
+packages = ["numpy", "rasterio"]
+conditional_packages = ["earthaccess (access method permitting)", "h5py (actual HDF5 reader permitting)"]
+native_components = ["GDAL", "HDF5 if required by selected reader"]
+versions = "not selected or tested"
+
+[deferred]
+packages = ["fastapi", "torch", "model inference packages"]
+reason = "Not required for mandatory static curated MVP"

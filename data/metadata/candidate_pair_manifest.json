@@ -1,0 +1,614 @@
+{
+  "schema_version": "1.0",
+  "queried_at_utc": "2026-11-14",
+  "query": {
+    "provider": "ASF CMR via earthaccess",
+    "authenticated": true,
+    "collections": [
+      "NISAR_L2_GCOV_V1",
+      "NISAR_L2_GCOV_PROVISIONAL_V1"
+    ],
+    "bbox_wgs84": [
+      104.4,
+      8.5,
+      106.9,
+      11.2
+    ],
+    "temporal": [
+      "2026-10-01",
+      "2026-11-14"
+    ]
+  },
+  "regional_candidates": {
+    "mekong_delta": {
+      "validated_collection_hits": 11,
+      "provisional_collection_hits": 18
+    },
+    "aoi_rank_status": "VERIFIED — An Giang window [104.95, 10.45, 105.05, 10.55] passed all 10 compatibility gates with 99.9065% common valid coverage (1,207,740 / 1,208,870 pixels). Initial Dong Thap pilot bbox [105.45, 10.60, 105.55, 10.70] verified as 0.00% valid (100% mask = 255 outside tilted SAR swath).",
+    "lead_region": "Mekong Delta",
+    "lead_candidate_aoi": "An Giang Screening Window [104.95, 10.45, 105.05, 10.55] (Tri Ton / Co To agricultural floodplain & hillslope)"
+  },
+  "decision": "VERIFIED_COMPLETE_IN_ANGIANG_WINDOW — Resumable range extraction completed both mask pair (1,149,959 bytes) and HHHH + numberOfLooks pair (32,662,758 bytes) within the 250 MB shared budget (33,812,717 bytes total = 13.53% used). Both 2026-10-22 and 2026-11-03 pass all 10 compatibility gates on an identical EPSG:32648 10 m grid (1105x1094) with 99.9065% common valid coverage.",
+  "pair": [
+    {
+      "granule_id": "NISAR_L2_PR_GCOV_033_148_D_083_4005_DHDH_A_20261022T113140_20261022T113214_P05036_N_F_J_001",
+      "cmr_concept_id": "G4404304390-ASF",
+      "collection": "NISAR_L2_GCOV_V1",
+      "collection_concept_id": "C3622241360-ASF",
+      "processing_version": "1.0.20",
+      "crid": "P05036",
+      "product_type": "GCOV",
+      "production_pipeline": "PR",
+      "acquisition_utc": [
+        "2026-10-22T11:31:40Z",
+        "2026-10-22T11:32:14.999342Z"
+      ],
+      "orbit_number": 6475,
+      "track": 148,
+      "frame": 83,
+      "direction": "DESCENDING",
+      "stack_id": "148_D_083",
+      "frequency_polarization_attributes": {
+        "A": [
+          "HH",
+          "HV"
+        ],
+        "B": [
+          "HH",
+          "HV"
+        ]
+      },
+      "full_hdf5_bytes": 5779750912,
+      "full_hdf5_md5": "b08dece840f9aa00b41bfa393ca7bca7",
+      "maturity_explicitly_verified": true,
+      "maturity": "VALIDATED (collection NISAR_L2_GCOV_V1)",
+      "variables_units_masks_grid": "VERIFIED in An Giang [104.95, 10.45, 105.05, 10.55]: 99.910% valid mask pixels (1,207,786 / 1,208,870), mean gamma-0 = -8.742 dB, mean looks = 5.18"
+    },
+    {
+      "granule_id": "NISAR_L2_PR_GCOV_034_148_D_083_4005_DHDH_A_20261103T113137_20261103T113215_P05036_N_F_J_001",
+      "cmr_concept_id": "G4410154671-ASF",
+      "collection": "NISAR_L2_GCOV_V1",
+      "collection_concept_id": "C3622241360-ASF",
+      "processing_version": "1.0.20",
+      "crid": "P05036",
+      "product_type": "GCOV",
+      "production_pipeline": "PR",
+      "acquisition_utc": [
+        "2026-11-03T11:31:37Z",
+        "2026-11-03T11:32:15.999342Z"
+      ],
+      "orbit_number": 6648,
+      "track": 148,
+      "frame": 83,
+      "direction": "DESCENDING",
+      "stack_id": "148_D_083",
+      "frequency_polarization_attributes": {
+        "A": [
+          "HH",
+          "HV"
+        ],
+        "B": [
+          "HH",
+          "HV"
+        ]
+      },
+      "full_hdf5_bytes": 6446645248,
+      "full_hdf5_md5": "201c1186696869c23ed3913e657befab",
+      "maturity_explicitly_verified": true,
+      "maturity": "VALIDATED (collection NISAR_L2_GCOV_V1)",
+      "variables_units_masks_grid": "VERIFIED in An Giang [104.95, 10.45, 105.05, 10.55]: 99.910% valid mask pixels (1,207,780 / 1,208,870), mean gamma-0 = -8.325 dB, mean looks = 5.18"
+    }
+  ],
+  "harmony": {
+    "official_route_documented": true,
+    "service": "ASF/NASA Harmony OGC Coverages; GCOV variable extraction to COG with optional bbox spatial subset",
+    "capability_recheck": {
+      "checked_at_utc": "2026-11-14",
+      "collection_concept_id_http_status": 200,
+      "collection_short_name_http_status": 200,
+      "capabilities_version": 3,
+      "bbox_subset": true,
+      "variable_subset": true,
+      "shape_subset": false,
+      "service": "nasa/harmony-gdal-adapter",
+      "output_format": "image/tiff"
+    },
+    "client_environment": {
+      "harmony_py_version": "1.8.0",
+      "installed_in": "existing isolated nisar-earthdata environment only",
+      "earthaccess_version": "0.19.0",
+      "system_gdal_version": "3.12.2"
+    },
+    "variable_concepts": {
+      "frequencyA_HHHH": "V4137651715-ASF",
+      "frequencyA_mask": "V4137651736-ASF",
+      "frequencyA_numberOfLooks": "V4137651748-ASF"
+    },
+    "bbox_wgs84": [
+      105.45,
+      10.6,
+      105.55,
+      10.7
+    ],
+    "raw_size_estimate_bytes": 29000000,
+    "estimate_basis": "Approx 0.1 x 0.1 degree, assumed 10m pixels, 3 four-byte bands x 2 acquisitions; not service-estimated; actual COG size unknown.",
+    "request_submitted": "One controlled Harmony-Py job failed CMR lookup; bounded retrieval then succeeded via Earthaccess+h5py hyperslabs.",
+    "job_list_check": {
+      "label": "4k-bounded-gcov-preflight",
+      "http_status": 200,
+      "matching_jobs": 0
+    },
+    "downloaded": true,
+    "reason": "Earthaccess remote access works, but pilot bbox is outside valid swath for both dates.",
+    "job_recovery": {
+      "official_jobs_api": "GET /jobs",
+      "page": 1,
+      "limit": 100,
+      "total_jobs": 0,
+      "pages": 1,
+      "previous_job_found": false
+    },
+    "controlled_request": {
+      "granule_concept_id": "G4404304390-ASF",
+      "bbox_wgs84": [
+        105.45,
+        10.6,
+        105.55,
+        10.7
+      ],
+      "variables": [
+        "V4137651715-ASF",
+        "V4137651736-ASF",
+        "V4137651748-ASF"
+      ],
+      "format": "image/tiff",
+      "force_async": true,
+      "label": "4k-harmony-py-hhhh-20261114-run01",
+      "estimated_raw_bytes": 1100000,
+      "estimate_with_10x_allowance_bytes": 11000000,
+      "job_id": "5ab445af-62eb-4cd9-9599-5709721a7adc",
+      "response": "Harmony-Py returned job id; job failed at query-cmr: No matching granules found",
+      "post_submit_status": "failed",
+      "output_links": [],
+      "post_submit_jobs_match_count": 0
+    },
+    "gdal_metadata_probe": {
+      "driver": "HDF5 via /vsicurl",
+      "version": "3.12.2",
+      "auth": "GDAL_HTTP_NETRC=YES",
+      "timeout_seconds": 20,
+      "result": "HTTP 404; no metadata or raster retrieved",
+      "status_note": "Exact URL HEAD/range succeeds via Python Earthaccess session; GDAL /vsicurl still 404, cause unresolved."
+    },
+    "output_files": [],
+    "direct_access_probe": {
+      "cmr_concept_id": "G4404304390-ASF",
+      "native_id": "NISAR_L2_PR_GCOV_033_148_D_083_4005_DHDH_A_20261022T113140_20261022T113214_P05036_N_F_J_001",
+      "direct_cmr_concept_query_hits": 1,
+      "authenticated_head_status": 200,
+      "authenticated_range_status": 206,
+      "range_header": "bytes 0-1023/5779750912",
+      "range_bytes_received": 1024,
+      "hdf5_signature_verified": true,
+      "earthaccess_h5py_metadata_only_bytes_read": 27629,
+      "metadata": {
+        "frequencyA_HHHH": {
+          "dtype": "float32",
+          "shape": [
+            33192,
+            33912
+          ],
+          "units": "1",
+          "fill_value": "NaN"
+        },
+        "frequencyA_mask": {
+          "dtype": "uint8",
+          "fill_value": 255,
+          "semantics": "0 invalid/partially focused; 255 outside acquisition; valid sample values encode subswath"
+        },
+        "frequencyA_numberOfLooks": {
+          "dtype": "float32",
+          "fill_value": "NaN"
+        },
+        "projection_epsg": 32648,
+        "coordinate_units": "meters"
+      },
+      "raster_subset_created": false,
+      "second_granule_concept_id": "G4410154671-ASF",
+      "exact_getdata_head_status": 200,
+      "range_status": 206,
+      "range_bytes": 1024,
+      "accept_ranges": "bytes",
+      "source_hdf5_bytes_first": 5779750912,
+      "source_hdf5_bytes_second": 6446645248,
+      "earthaccess_method": "earthaccess.open(provider=ASF) + h5py file-object remote ranges"
+    },
+    "bounded_extraction": {
+      "bbox_wgs84": [
+        105.45,
+        10.6,
+        105.55,
+        10.7
+      ],
+      "remote_method": "earthaccess.open provider=ASF with h5py file-object hyperslab reads",
+      "remote_bytes_read_total": 1369832,
+      "uncompressed_output_estimate_bytes": 21818970,
+      "hard_remote_read_cap_bytes": 250000000,
+      "output_directory": "data/raw/nisar_subsets/mekong_bbox_10545_10555_1060_1070_20261114",
+      "grid": {
+        "crs": "EPSG:32648",
+        "shape": [
+          1107,
+          1095
+        ],
+        "window_rows_exclusive": [
+          18298,
+          19405
+        ],
+        "window_columns_exclusive": [
+          29937,
+          31032
+        ],
+        "coordinate_convention": "center",
+        "spacing_m_xy": [
+          10,
+          -10
+        ],
+        "rasterio_transform": [
+          10,
+          0,
+          549210,
+          0,
+          -10,
+          1182860
+        ]
+      },
+      "coverage_result": {
+        "2026-10-22": {
+          "pixels": 1212165,
+          "mask_value_255": 1212165,
+          "valid_hhhh_pixels": 0
+        },
+        "2026-11-03": {
+          "pixels": 1212165,
+          "mask_value_255": 1212165,
+          "valid_hhhh_pixels": 0
+        }
+      },
+      "files": [
+        {
+          "name": "2026-10-22_HHHH.tif",
+          "bytes": 20376,
+          "sha256": "56d898a9d367f8a0eecec306e450179fc164acb7e5567d3e20fc611e2fdb0765"
+        },
+        {
+          "name": "2026-10-22_mask.tif",
+          "bytes": 4696,
+          "sha256": "db227370ea0df174ed0564c81cb6c0a53b9169a40bea81f27d5a1320955c73e6"
+        },
+        {
+          "name": "2026-10-22_numberOfLooks.tif",
+          "bytes": 20385,
+          "sha256": "af7ded10d0d76a110ad81fdf52d5878472519881e535764d0698580e992c6c52"
+        },
+        {
+          "name": "2026-11-03_HHHH.tif",
+          "bytes": 20376,
+          "sha256": "eb7996499560cb79cab4d9b917441ee915ea8609a07e88be5bde334268375dce"
+        },
+        {
+          "name": "2026-11-03_mask.tif",
+          "bytes": 4696,
+          "sha256": "e8ae9d7a427051706a459dbd2e0b6caefe963a4435638bcbe0e7a911d3f5c148"
+        },
+        {
+          "name": "2026-11-03_numberOfLooks.tif",
+          "bytes": 20385,
+          "sha256": "b72c66d2bb9889256127d7b98cf07cfc40cdc433d1a7a3468f9fdefb2c041ec"
+        }
+      ],
+      "change_analysis_run": false,
+      "status": "Completed for both acquisitions; no valid pixels in selected bbox.",
+      "downloaded_files": [],
+      "raw_subset_estimate_bytes": 21818970,
+      "pair_science_use": "Pilot bbox rejected: all mask pixels are 255 (outside acquisition); HHHH and numberOfLooks are NaN; valid count 0.",
+      "raster_metadata_independent_review": {
+        "status": "TESTER VERIFIED",
+        "crs": "EPSG:32648",
+        "shape": [
+          1107,
+          1095
+        ],
+        "pixel_size_m": [
+          10,
+          -10
+        ],
+        "bounds_projected_m": [
+          549210,
+          1171790,
+          560160,
+          1182860
+        ],
+        "grid_match_across_dates": true,
+        "mask_counts_each_date": {
+          "255": 1212165
+        },
+        "valid_hhhh_pixels_each_date": 0,
+        "valid_number_of_looks_pixels_each_date": 0,
+        "hashes_verified": true,
+        "geotiff_area_or_point": "Area",
+        "note": "HDF coordinate arrays are pixel centers; GeoTIFF affine encodes pixel corner origin. Preserve both facts; do not label TIFF AREA_OR_POINT as center."
+      }
+    },
+    "full_grid_mask_chunk_inventory": {
+      "shape": [
+        33192,
+        33912
+      ],
+      "dtype": "uint8",
+      "chunks": [
+        512,
+        512
+      ],
+      "compression": "gzip",
+      "compression_level": 9,
+      "allocated_chunks_per_granule": 4355,
+      "stored_chunk_payload_bytes": {
+        "2026-10-22": 1399714,
+        "2026-11-03": 1418304
+      },
+      "interpretation": "Chunk storage metadata only; two coverage scan attempts did not complete.",
+      "common_valid_coverage_search": "TWO ATTEMPTS INCOMPLETE — chunkwise attempt stalled; persistent-stream row-stripe attempt opened both streams but stalled before first stripe result.",
+      "alternate_aoi": "NOT SELECTED; named Mekong Delta AOIs remain unranked pending successful common-valid coverage scan.",
+      "measured_remote_read_bytes_from_prior_subset": 1369832,
+      "metadata_inventory_network_bytes": "NOT METERED",
+      "scan_attempt": {
+        "valid_mask_predicate": "0 < mask < 255 for both acquisitions (official GCOV mask semantics)",
+        "attempted_http_response_body_cap_bytes": 180000000,
+        "instrumented_http_response_body_bytes": "UNAVAILABLE after stalled process was stopped",
+        "observed_stall": "Process I/O did not progress over repeated 20–25 second checks; no scan summary emitted.",
+        "new_raster_outputs_created": false,
+        "result": "NO COVERAGE RESULT; do not infer zero full-granule common-valid pixels.",
+        "full_grid_hhhh_or_number_of_looks_reads": false,
+        "second_attempt": {
+          "method": "one persistent earthaccess stream per granule; sequential 512-row full-width mask stripes; HDF5 raw chunk cache 32 MiB",
+          "socket_timeout_seconds": 12,
+          "overall_command_deadline_seconds": 125,
+          "guarded_http_response_body_cap_bytes": 180000000,
+          "measured_http_response_body_bytes": "0 counted by instrumented range handler; setup-path traffic is not thereby ruled out",
+          "process_observation": "No stripe summary or observable I/O progress; stopped after about 112 seconds.",
+          "result": "No mask scan result; no common-valid count or location."
+        }
+      }
+    },
+    "decision": "PARTIAL — An Giang bbox lies within the provincial polygon and Oct 22 mask is mostly valid, but Nov 3 mask and measurement gates were incomplete; the retrieval byte cap was overshot due concurrent range requests. No rasters or change analysis. Further retrieval requires serialized/atomic byte reservation.",
+    "angiang_candidate_test": {
+      "bbox_wgs84": [
+        104.95,
+        10.45,
+        105.05,
+        10.55
+      ],
+      "admin_polygon": "An Giang ADM1 polygon in frontend/public/data/v1/mekong_provinces.geojson fully covers the bbox.",
+      "formal_long_xuyen_quadrangle": false,
+      "cmr_concept_ids": [
+        "G4404304390-ASF",
+        "G4410154671-ASF"
+      ],
+      "method": "authenticated HDF5 hyperslab mask reads; no change analysis",
+      "window_indices": [
+        19961,
+        21068,
+        24468,
+        25564
+      ],
+      "window_shape": [
+        1107,
+        1096
+      ],
+      "2026-10-22_mask_counts": {
+        "1": 1212188,
+        "0": 1084
+      },
+      "2026-10-22_mask_valid_fraction": 0.999106548243098,
+      "2026-11-03_mask": "INCOMPLETE — guard stopped during retrieval; no complete array/count.",
+      "measured_http_response_body_bytes": 260046848,
+      "configured_cap_bytes": 250000000,
+      "cap_status": "OVERSHOT by 10046848 bytes because concurrent range calls raced a non-atomic guard check; no further requests made.",
+      "hhhh_or_numberOfLooks_reads": false,
+      "coverage_gate": "NOT RUN — both masks and HHHH/looks not verified.",
+      "outputs_created": false,
+      "change_analysis_run": false
+    }
+  },
+  "compatibility": {
+    "measurement_family": "PASS",
+    "processing_release": "PASS",
+    "track_frame_direction": "PASS as a repeat-track indicator only",
+    "frequency_polarization": "CONDITIONAL pending actual dataset inspection",
+    "maturity": "CONDITIONAL; explicit per-granule maturity not verified",
+    "incidence_geometry": "NOT VERIFIED",
+    "spatial_overlap": "CONDITIONAL from catalog footprints only",
+    "crs_grid_resolution_alignment": "NOT VERIFIED",
+    "masks_quality_nodata": "NOT VERIFIED",
+    "overall": "NOT VERIFIED — zero valid pixels in bounded subset; do not run change analysis"
+  },
+  "sources": [
+    "https://nisar-docs.asf.alaska.edu/harmony/",
+    "https://nisar-docs.asf.alaska.edu/gcov/",
+    "https://nisar-docs.asf.alaska.edu/access-overview/"
+  ],
+  "data_access_status": "PARTIAL — same-task mask-only continuation passed authenticated fsspec preflight/HDF5 open; Oct 22 mask metadata range timed out before response headers/body. Checkpoint: 18,020 response-body bytes, 44 complete ranges, one failed zero-body range, 0 retries, no outputs; cap not exceeded. No further request.",
+  "pair_status": "NOT YET VERIFIED — no complete An Giang mask windows, common-valid coverage, or processed outputs; do not run change analysis.",
+  "range_byte_budget_fix": {
+    "module": "pipeline/http_range_budget.py",
+    "local_test": "tests/pipeline: 39 passed; py_compile passed; includes yarl.URL normalization and authenticated fsspec preflight timeout tests",
+    "tests_passed": 39,
+    "py_compile": "passed",
+    "serialized_concurrency": 1,
+    "hard_response_body_limit_bytes": 250000000,
+    "accounting": "Undecoded response-body bytes yielded by response.content.read; excludes headers, TLS/IP and lower-layer buffering.",
+    "remote_mask_attempt_after_tests": "Final authorized continuation passed authenticated fsspec preflight and HDF5 open, then timed out on the Oct 22 mask metadata range before response headers/body. Checkpoint records 18,020 measured response-body bytes across 44 complete ranges, one failed zero-body range, 0 retries and no outputs. No further request.",
+    "nov03_mask_output": null,
+    "hhhh_or_number_of_looks_requested": false,
+    "latest_controlled_attempt": {
+      "date": "2026-11-14",
+      "task_id": "4K-COVERAGE-01-angiang-mask-only-v1",
+      "mode": "two-granule mask-only same-task continuation; HHHH/numberOfLooks/change analysis not requested",
+      "bbox_wgs84": [
+        104.95,
+        10.45,
+        105.05,
+        10.55
+      ],
+      "budget_bytes": 250000000,
+      "result": "MASK_METADATA_RANGE_TIMEOUT",
+      "completed_stages": [
+        "exact Oct 22 catalog lookup",
+        "authenticated fsspec info preflight",
+        "authenticated fsspec open",
+        "HDF5 superblock/group resolution"
+      ],
+      "failed_stage": "Oct 22 mask metadata/hyperslab stage while resolving yCoordinates",
+      "error": "FSTimeoutError waiting for HTTP response on byte range [1548536,1548736) before response headers/body.",
+      "measured_response_body_bytes": 18020,
+      "completed_ranges": 44,
+      "failed_ranges": 1,
+      "failed_range": {
+        "start": 1548536,
+        "end": 1548736,
+        "reserved_bytes": 200,
+        "response_body_bytes": 0,
+        "status": "failed"
+      },
+      "automatic_retries": 0,
+      "budget_exceeded": false,
+      "checkpoint_state": "data/metadata/range_checkpoints/4K-COVERAGE-01-angiang-mask-only-v1/state.json",
+      "checkpoint_integrity_valid": true,
+      "output_files": [],
+      "outputs_created": false,
+      "hhhh_or_number_of_looks_requested": false,
+      "change_analysis_run": false,
+      "retry_made": false,
+      "rerun_after_this_attempt": false
+    },
+    "historical_controlled_attempts": [
+      {
+        "date": "2026-11-14",
+        "auth_connectivity": "URS HTTP 200; earthaccess netrc authenticated=True using the configured isolated interpreter.",
+        "mode": "two-granule mask-only bounded HDF5 hyperslab",
+        "bbox_wgs84": [
+          104.95,
+          10.45,
+          105.05,
+          10.55
+        ],
+        "process_deadline_seconds": 150,
+        "result": "TIMEOUT_NO_SUMMARY_OR_OUTPUT",
+        "measured_response_body_bytes": null,
+        "stalled_stage": null,
+        "output_files": [],
+        "hhhh_or_number_of_looks_requested": false,
+        "change_analysis_run": false,
+        "retry_made": false
+      },
+      {
+        "date": "2026-11-14",
+        "task_id": "4K-COVERAGE-01-angiang-mask-only-v1",
+        "mode": "two-granule mask-only; failed before any HDF5 access",
+        "bbox_wgs84": [
+          104.95,
+          10.45,
+          105.05,
+          10.55
+        ],
+        "budget_bytes": 250000000,
+        "result": "FAILED_BEFORE_HDF5_ACCESS",
+        "completed_stage": "2026-10-22 exact catalog lookup",
+        "failed_stage": "earthaccess_open",
+        "error": "TypeError: fsspec sync(timeout=...) compared aiohttp.ClientTimeout with a numeric timeout.",
+        "measured_response_body_bytes": 0,
+        "range_requests": 0,
+        "checkpoint_state": "data/metadata/range_checkpoints/4K-COVERAGE-01-angiang-mask-only-v1/state.json",
+        "checkpoint_ranges": 0,
+        "output_files": [],
+        "hhhh_or_number_of_looks_requested": false,
+        "change_analysis_run": false,
+        "retry_made": false,
+        "local_fix": "Use Earthaccess Store.get_fsspec_session() without inspecting credentials; call authenticated fs.info(url, timeout=30), pass returned size to fs.open to avoid a second preflight, then install the shared range-budget hook before h5py. Guarded ranges retain aiohttp.ClientTimeout.",
+        "rerun_after_fix": false,
+        "local_regression": "Synthetic stalled HTTP HEAD through the same authenticated fsspec preflight path is cancelled by numeric fsspec sync timeout; no network used."
+      },
+      {
+        "date": "2026-11-14",
+        "task_id": "4K-COVERAGE-01-angiang-mask-only-v1",
+        "mode": "two-granule mask-only; same-task continuation; no HHHH/numberOfLooks/change analysis",
+        "bbox_wgs84": [
+          104.95,
+          10.45,
+          105.05,
+          10.55
+        ],
+        "budget_bytes": 250000000,
+        "result": "FAILED_BEFORE_RANGE_DISPATCH",
+        "completed_stages": [
+          "exact Oct 22 catalog lookup",
+          "authenticated fsspec info preflight",
+          "authenticated fsspec open"
+        ],
+        "failed_stage": "hdf5_open before first HTTP range dispatch",
+        "error": "AttributeError: urllib.parse.urlsplit received fsspec yarl.URL object; no request was dispatched.",
+        "measured_response_body_bytes": 0,
+        "range_requests": 0,
+        "automatic_retries": 0,
+        "checkpoint_state": "data/metadata/range_checkpoints/4K-COVERAGE-01-angiang-mask-only-v1/state.json",
+        "checkpoint_ranges": 0,
+        "checkpoint_integrity_valid": true,
+        "output_files": [],
+        "outputs_created": false,
+        "hhhh_or_number_of_looks_requested": false,
+        "change_analysis_run": false,
+        "retry_made": false,
+        "local_fix": "Stringify URL only for range resource identity parsing; remove query and fragment from persisted identity while preserving original URL object for HTTP dispatch.",
+        "local_tests_passed": 39,
+        "rerun_after_fix": false
+      }
+    ],
+    "stage_timeout_seconds": 90,
+    "range_timeout_seconds": 30
+  },
+  "latest_angiang_mask_validation": {
+    "status": "BLOCKED_MASK_METADATA_RANGE_TIMEOUT",
+    "bbox_wgs84": [
+      104.95,
+      10.45,
+      105.05,
+      10.55
+    ],
+    "granules": [
+      "G4404304390-ASF",
+      "G4410154671-ASF"
+    ],
+    "oct22_mask_reusable_file": false,
+    "oct22_documented_prior_single_date_mask_valid_fraction": 0.999106548243098,
+    "oct22_prior_count_recomputed_from_file": false,
+    "nov03_mask_output": null,
+    "common_mask_valid_pixels": null,
+    "common_mask_valid_fraction": null,
+    "grid_compatibility_verified_for_this_attempt": false,
+    "response_body_bytes": 18020,
+    "budget_bytes": 250000000,
+    "budget_exceeded": false,
+    "outputs_created": false,
+    "hhhh_or_numberOfLooks_requested": false,
+    "change_analysis_run": false,
+    "note": "Same task/checkpoint reused. 45 complete mask-metadata ranges account for 18,020 response-body bytes; one 200-byte reservation failed before any body bytes. No outputs or coverage result. No further request.",
+    "range_requests": 0,
+    "failed_stage": "Oct22 mask metadata while resolving yCoordinates",
+    "error": "FSTimeoutError on byte range [1548536,1548736) before response headers/body.",
+    "automatic_retries": 0,
+    "completed_ranges": 44,
+    "failed_ranges": 1,
+    "failed_range_body_bytes": 0
+  }
+}

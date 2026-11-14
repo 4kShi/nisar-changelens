@@ -1,0 +1,62 @@
+# ============================================================================
+# NISAR ChangeLens (Team 4/K) — Public Release .gitignore
+# ============================================================================
+
+# Secrets, Credentials & Private Config (NEVER COMMIT)
+.env
+.env.*
+!.env.example
+.netrc
+*.pem
+*.key
+*credentials*
+*secret*
+*token*
+
+# Node.js / Frontend Build & Dependencies
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python Bytecode, Virtual Environments & Caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# Intermediate HDF5 Range Chunk Cache & Large Local Raw Granules
+data/metadata/range_checkpoints/**/ranges/
+data/metadata/range_checkpoints/**/*.lock
+data/raw/nisar_local/
+*.h5
+*.hdf5
+
+# Pre-Hackathon Internal Relay, Legacy Recovery & Preparation Scratchpad
+preparation/
+.recovery/
+frontend/.recovery/
+
+# Duplicate Root Markdown Mirrors (Canonical versions are in docs/)
+/DATA_SOURCES.md
+/DEMO_GUIDE.md
+/FINAL_SCIENTIFIC_QA.md
+/LIMITATIONS.md
+/SCIENTIFIC_METHODOLOGY.md
+/TEAM_HANDOFF.md
+
+# OS & Editor Artifacts
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.tmp
