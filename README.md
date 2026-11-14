@@ -11,6 +11,22 @@
 
 ---
 
+## Quick Start (Run Website Locally — No Credentials Needed)
+
+**Requirement**: [Node.js](https://nodejs.org/) `v20.19+` or `v22.12+` LTS (`v22.12+` recommended). No backend server or NASA Earthdata login is required.
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open the local URL printed in your terminal (typically **`http://localhost:5173/`**). Press `Ctrl + C` in the terminal to stop the server.
+
+> **New to NISAR ChangeLens?** Read the step-by-step [**Complete User Guide (`docs/USER_GUIDE.md`)**](docs/USER_GUIDE.md) for installation, map controls (`Before`, `After`, `Change Map`, `Swipe`), threshold presets (`±2 / ±3 / ±4 dB`), scientific interpretation, and troubleshooting.
+
+---
+
 ## Table of Contents
 
 1. [Project Title & Tagline](#1-project-title-and-tagline)
@@ -250,7 +266,7 @@ Full disclosure is provided in [`docs/AI_USAGE_DISCLOSURE.md`](docs/AI_USAGE_DIS
 ## 14. Installation and Reproduction Instructions
 
 ### Prerequisites
-- **Node.js**: `v20+` or `v22 LTS` (with `npm`)
+- **Node.js**: `^20.19.0` or `>=22.12.0` LTS (with `npm`; `v22.12+` recommended if running `npm test`)
 - **Python** *(optional for web demo; required only for running Python pipeline tests or re-extracting HDF5 subsets)*: `Python 3.12+`
 
 ### 1. Launch the Interactive Web Application (Works Without Earthdata Credentials)
@@ -324,6 +340,7 @@ See [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) and [`docs/FINAL_SCIENTIFIC_QA.
 We thank **NASA**, the **Indian Space Research Organisation (ISRO)**, and the **Alaska Satellite Facility DAAC (ASF DAAC)** for operating the NISAR mission and providing open scientific access to `NISAR_L2_GCOV_V1` data, as well as the **NASA Space Apps Challenge 2026** global and **Hanoi** local organizers.
 
 ### Detailed Documentation Index (`docs/`)
+- [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) — Step-by-step installation, local website launch, visual exploration walkthrough, and scientific interpretation guide for new users & judges.
 - [`docs/GITHUB_RELEASE_AUDIT.md`](docs/GITHUB_RELEASE_AUDIT.md) — Release engineering, security scan, file inclusion/exclusion, and deployment readiness report.
 - [`docs/CONTRIBUTIONS.md`](docs/CONTRIBUTIONS.md) — Official Team `4/K` roster and individual/collaborative contribution audit.
 - [`docs/AI_USAGE_DISCLOSURE.md`](docs/AI_USAGE_DISCLOSURE.md) — Complete disclosure of AI development tools vs. deterministic product logic.
