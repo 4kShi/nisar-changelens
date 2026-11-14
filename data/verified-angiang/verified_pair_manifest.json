@@ -1,0 +1,229 @@
+{
+  "mode": "VERIFIED_MASK_THEN_BACKSCATTER",
+  "task_id": "4K-BACKSCATTER-01-angiang-hhhh-looks-v1",
+  "mask_task_id": "4K-COVERAGE-01-angiang-mask-only-v1",
+  "mask_bytes_used": 1149959,
+  "shared_total_limit_bytes": 250000000,
+  "remaining_limit_for_backscatter_bytes": 248850041,
+  "bbox_wgs84": [
+    104.95,
+    10.45,
+    105.05,
+    10.55
+  ],
+  "window_row_col": [
+    19962,
+    21067,
+    24469,
+    25563
+  ],
+  "expected_shape": [
+    1105,
+    1094
+  ],
+  "common_mask_valid_fraction": 0.9990652427473591,
+  "status": "VERIFIED_PAIR_COMPLETE",
+  "completed_at_utc": "2026-11-14T09:26:37+00:00",
+  "backscatter_response_body_bytes": 32662758,
+  "combined_total_response_body_bytes": 33812717,
+  "remaining_shared_budget_bytes": 216187283,
+  "crs": "EPSG:32648",
+  "transform": [
+    10.0,
+    0.0,
+    494530.0,
+    0.0,
+    -10.0,
+    1166220.0
+  ],
+  "shape": [
+    1105,
+    1094
+  ],
+  "bounds_lonlat": [
+    104.950003,
+    10.450025,
+    105.049997,
+    10.549965
+  ],
+  "maplibre_coordinates": [
+    [
+      104.950003,
+      10.549965
+    ],
+    [
+      105.049997,
+      10.549965
+    ],
+    [
+      105.049981,
+      10.450025
+    ],
+    [
+      104.950019,
+      10.450025
+    ]
+  ],
+  "granules_verified": [
+    {
+      "granule": "NISAR_L2_PR_GCOV_033_148_D_083_4005_DHDH_A_20261022T113140_20261022T113214_P05036_N_F_J_001",
+      "concept_id": "G4404304390-ASF",
+      "identification": {
+        "productType": "GCOV",
+        "compositeReleaseId": "P05036",
+        "productVersion": "1.0.20",
+        "trackNumber": 148,
+        "frameNumber": 83,
+        "lookDirection": "Left",
+        "orbitPassDirection": "Descending",
+        "zeroDopplerStartTime": "2026-10-22T11:31:40.000000000",
+        "zeroDopplerEndTime": "2026-10-22T11:32:14.999342105",
+        "absoluteOrbitNumber": 6475,
+        "granuleId": "NISAR_L2_PR_GCOV_033_148_D_083_4005_DHDH_A_20261022T113140_20261022T113214_P05036_N_F_J_001",
+        "missionId": "NISAR",
+        "instrumentName": "LSAR",
+        "radarBand": "L",
+        "isUrgentObservation": "False"
+      },
+      "hhhh_units": "1",
+      "hhhh_description": "Covariance between HH and HH",
+      "looks_units": "1",
+      "mask_valid_pixels": 1207786,
+      "hhhh_valid_positive_pixels": 1207786,
+      "mean_db": -9.793,
+      "std_db": 5.083,
+      "mean_looks": 5.18
+    },
+    {
+      "granule": "NISAR_L2_PR_GCOV_034_148_D_083_4005_DHDH_A_20261103T113137_20261103T113215_P05036_N_F_J_001",
+      "concept_id": "G4410154671-ASF",
+      "identification": {
+        "productType": "GCOV",
+        "compositeReleaseId": "P05036",
+        "productVersion": "1.0.20",
+        "trackNumber": 148,
+        "frameNumber": 83,
+        "lookDirection": "Left",
+        "orbitPassDirection": "Descending",
+        "zeroDopplerStartTime": "2026-11-03T11:31:37.000000000",
+        "zeroDopplerEndTime": "2026-11-03T11:32:15.999342105",
+        "absoluteOrbitNumber": 6648,
+        "granuleId": "NISAR_L2_PR_GCOV_034_148_D_083_4005_DHDH_A_20261103T113137_20261103T113215_P05036_N_F_J_001",
+        "missionId": "NISAR",
+        "instrumentName": "LSAR",
+        "radarBand": "L",
+        "isUrgentObservation": "False"
+      },
+      "hhhh_units": "1",
+      "hhhh_description": "Covariance between HH and HH",
+      "looks_units": "1",
+      "mask_valid_pixels": 1207780,
+      "hhhh_valid_positive_pixels": 1207780,
+      "mean_db": -9.317,
+      "std_db": 4.706,
+      "mean_looks": 5.18
+    }
+  ],
+  "stats": {
+    "denominator_description": "jointly valid pixels inside An Giang window (0 < mask < 255, HHHH > 0, numberOfLooks > 0 on both dates)",
+    "total_pixels_in_aoi": 1208870,
+    "valid_pixels": 1207740,
+    "common_valid_fraction": 0.999065,
+    "excluded": {
+      "invalid_before": 1084,
+      "invalid_after": 1090,
+      "joint_excluded": 1130
+    },
+    "before_db": {
+      "mean": -8.742,
+      "median": -7.346,
+      "p05": -18.306,
+      "p95": -3.744,
+      "std": 4.41
+    },
+    "after_db": {
+      "mean": -8.325,
+      "median": -7.297,
+      "p05": -17.141,
+      "p95": -3.715,
+      "std": 3.99
+    },
+    "delta_db": {
+      "mean": 0.417,
+      "median": 0.24,
+      "p05": -1.186,
+      "p95": 2.663,
+      "std": 1.277
+    },
+    "classes": {
+      "decrease": 2905,
+      "no_significant_change": 1160945,
+      "increase": 43890
+    },
+    "pixel_area_m2": 100.0,
+    "areas_km2": {
+      "total_aoi": 120.89,
+      "valid_analyzed": 120.77,
+      "decrease_area": 0.29,
+      "increase_area": 4.39,
+      "no_significant_change_area": 116.09
+    }
+  },
+  "files": [
+    {
+      "bytes": 7397,
+      "sha256": "af0eba4063a97602bd51e669e7838eae5df612e6a1c65cab85017adec86de935",
+      "name": "20261022_mask.tif"
+    },
+    {
+      "bytes": 3784519,
+      "sha256": "23d03545aed516817ff154825ed4b68eb1fcea543afa0c71449c19ffe269d2da",
+      "name": "20261022_HHHH.tif"
+    },
+    {
+      "bytes": 4060806,
+      "sha256": "6b83816b8a6b5c60eae09748c72d97e2d01e1788598dfa19f58e9b78f9f72eb4",
+      "name": "20261022_numberOfLooks.tif"
+    },
+    {
+      "bytes": 7400,
+      "sha256": "01b7d9bf7289bdb331bfb10584ee74c89528762ca059716f8358cecd05b72bcb",
+      "name": "20261103_mask.tif"
+    },
+    {
+      "bytes": 3776075,
+      "sha256": "6029c49b01916ac295ebadcf125529f955269eada6e26166590e764085595d53",
+      "name": "20261103_HHHH.tif"
+    },
+    {
+      "bytes": 4060549,
+      "sha256": "815291e2efb33f70ea99686ed2fb846107c041bd1a69d99ff14a528712146879",
+      "name": "20261103_numberOfLooks.tif"
+    },
+    {
+      "bytes": 4373110,
+      "sha256": "dba52a0625b2ac133a1c6fbd1deac01c8ecfecbe87e9b9957b6cf3427fd693ed",
+      "name": "delta_db.tif"
+    },
+    {
+      "name": "before_db.png",
+      "bytes": 946777,
+      "sha256": "04f7876b52403a0ccccb7d54c6021b20fdd3796d8df455a4e808d4ff634c4dc5"
+    },
+    {
+      "name": "after_db.png",
+      "bytes": 928677,
+      "sha256": "bade485125cd8a924a5cf457e3b87b3279730d27bdfc54075ff6ee035dba42f6"
+    },
+    {
+      "name": "change_db.png",
+      "bytes": 2581321,
+      "sha256": "a7883858deaf4f4dd06e253e95d375b5746b10eaa8ca3c174ac7bf5162f29565"
+    },
+    {
+      "name": "change_classes.png",
+      "bytes": 42345,
+      "sha256": "a4af22fe19719dcd024d48f3781ba41e7d992ac8c89c328e21f4869ae46b69e3"
+    }
+  ]
+}
