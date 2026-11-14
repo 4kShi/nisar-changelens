@@ -269,6 +269,36 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
     [afterConceptId]
   );
 
+  // What the workspace may claim about the active area for the *selected* pair.
+  // The An Giang preset describes the verified 2026-10-22 → 2026-11-03 pair; when
+  // another pair is selected those claims (label, summary, valid %, Tier 4) do not apply.
+  const displayArea: StudyAreaPreset = useMemo(() => {
+    if (area !== 'angiang-screening' || compatibility.allPassed) return activeArea;
+    const bothIntersect = [selectedBeforeGranule, selectedAfterGranule].every(
+      (g) => g !== undefined && bboxesIntersect(g.footprintBbox, activeArea.bbox)
+    );
+    const label = t('area.angiangPendingLabel');
+    const description = t('area.angiangPendingDesc');
+    const summary = t('area.angiangPendingSummary');
+    const badge = t('map.pairPendingBadge');
+    return {
+      ...activeArea,
+      label,
+      label_vi: label,
+      description,
+      description_vi: description,
+      scientificSummary: summary,
+      scientificSummary_vi: summary,
+      evidenceBadge: badge,
+      evidenceBadge_vi: badge,
+      evidenceTier: bothIntersect ? 'TIER_2_FOOTPRINT' : 'TIER_1_CATALOG',
+      comparisonAvailable: false,
+      validCoveragePct: null,
+      commonValidPixels: null,
+      totalPixels: null,
+    };
+  }, [area, compatibility.allPassed, activeArea, selectedBeforeGranule, selectedAfterGranule, t]);
+
   const activeThresholdPreset = useMemo(
     () =>
       VISUALIZATION_THRESHOLD_PRESETS.find((p) => p.id === visualizationThreshold) ??
@@ -454,12 +484,10 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
           <div className="map-toolbar">
             <div>
               <span className="eyebrow" data-testid="area-evidence-badge">
-                {area === 'angiang-screening' && !compatibility.allPassed
-                  ? t('map.pairPendingBadge')
-                  : pick(activeArea.evidenceBadge, activeArea.evidenceBadge_vi)}
+                {pick(displayArea.evidenceBadge, displayArea.evidenceBadge_vi)}
               </span>
-              <h1>{pick(activeArea.label, activeArea.label_vi)}</h1>
-              <p>{pick(activeArea.description, activeArea.description_vi)}</p>
+              <h1>{pick(displayArea.label, displayArea.label_vi)}</h1>
+              <p>{pick(displayArea.description, displayArea.description_vi)}</p>
             </div>
             <div className="map-toolbar-right">
               {railWidth !== DEFAULT_RAIL_WIDTH && (
@@ -514,7 +542,7 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
           <div className="map-caption">
             <span>
               <b>{t('map.activeEvidencePrefix')}</b>{' '}
-              {pick(activeArea.scientificSummary, activeArea.scientificSummary_vi)}
+              {pick(displayArea.scientificSummary, displayArea.scientificSummary_vi)}
             </span>
             <span>
               {location
@@ -650,7 +678,7 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
                 ))}
                 {area === 'custom-aoi' && (
                   <option value="custom-aoi">
-                    {pick(activeArea.label, activeArea.label_vi)}
+                    {pick(displayArea.label, displayArea.label_vi)}
                   </option>
                 )}
               </select>
@@ -678,7 +706,7 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
               {mode === 'explore' ? (
                 <>
                   <p className="explore-location-desc">
-                    {pick(activeArea.description, activeArea.description_vi)}
+                    {pick(displayArea.description, displayArea.description_vi)}
                   </p>
                   <details className="explore-progressive-details">
                     <summary>{t('explore.sec1.coordsSummary')}</summary>
@@ -686,16 +714,16 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
                       <div className="metric-box">
                         <span className="metric-label">{t('sec1.bboxLabel')}</span>
                         <strong>
-                          [{activeArea.bbox[0].toFixed(2)}°E, {activeArea.bbox[1].toFixed(2)}°N,{' '}
-                          {activeArea.bbox[2].toFixed(2)}°E, {activeArea.bbox[3].toFixed(2)}°N]
+                          [{displayArea.bbox[0].toFixed(2)}°E, {displayArea.bbox[1].toFixed(2)}°N,{' '}
+                          {displayArea.bbox[2].toFixed(2)}°E, {displayArea.bbox[3].toFixed(2)}°N]
                         </strong>
                       </div>
                       <div className="metric-box">
                         <span className="metric-label">{t('sec1.areaValidLabel')}</span>
                         <strong>
-                          {activeArea.areaKm2.toLocaleString()} km² ·{' '}
-                          {activeArea.validCoveragePct !== null
-                            ? `${activeArea.validCoveragePct.toFixed(2)}% ${t('sec1.validSuffix')}`
+                          {displayArea.areaKm2.toLocaleString()} km² ·{' '}
+                          {displayArea.validCoveragePct !== null
+                            ? `${displayArea.validCoveragePct.toFixed(2)}% ${t('sec1.validSuffix')}`
                             : t('sec1.unverifiedSubset')}
                         </strong>
                       </div>
@@ -708,16 +736,16 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
                     <div className="metric-box">
                       <span className="metric-label">{t('sec1.bboxLabel')}</span>
                       <strong>
-                        [{activeArea.bbox[0].toFixed(2)}°E, {activeArea.bbox[1].toFixed(2)}°N,{' '}
-                        {activeArea.bbox[2].toFixed(2)}°E, {activeArea.bbox[3].toFixed(2)}°N]
+                        [{displayArea.bbox[0].toFixed(2)}°E, {displayArea.bbox[1].toFixed(2)}°N,{' '}
+                        {displayArea.bbox[2].toFixed(2)}°E, {displayArea.bbox[3].toFixed(2)}°N]
                       </strong>
                     </div>
                     <div className="metric-box">
                       <span className="metric-label">{t('sec1.areaValidLabel')}</span>
                       <strong>
-                        {activeArea.areaKm2.toLocaleString()} km² ·{' '}
-                        {activeArea.validCoveragePct !== null
-                          ? `${activeArea.validCoveragePct.toFixed(2)}% ${t('sec1.validSuffix')}`
+                        {displayArea.areaKm2.toLocaleString()} km² ·{' '}
+                        {displayArea.validCoveragePct !== null
+                          ? `${displayArea.validCoveragePct.toFixed(2)}% ${t('sec1.validSuffix')}`
                           : t('sec1.unverifiedSubset')}
                       </strong>
                     </div>
@@ -726,11 +754,11 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
                   <div className="evidence-ladder" aria-label={t('sec1.ladderAria')}>
                     <span className="field-label">{t('sec1.ladderTitle')}</span>
                     {EVIDENCE_TIERS.map((tier) => {
-                      const isCurrent = activeArea.evidenceTier === tier.id;
+                      const isCurrent = displayArea.evidenceTier === tier.id;
                       const isPassed =
-                        (activeArea.evidenceTier === 'TIER_4_COMPARABLE' && tier.level <= 4) ||
-                        (activeArea.evidenceTier === 'TIER_2_FOOTPRINT' && tier.level <= 2) ||
-                        (activeArea.evidenceTier === 'TIER_1_CATALOG' && tier.level === 1);
+                        (displayArea.evidenceTier === 'TIER_4_COMPARABLE' && tier.level <= 4) ||
+                        (displayArea.evidenceTier === 'TIER_2_FOOTPRINT' && tier.level <= 2) ||
+                        (displayArea.evidenceTier === 'TIER_1_CATALOG' && tier.level === 1);
                       return (
                         <div
                           key={tier.id}

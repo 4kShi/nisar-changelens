@@ -139,7 +139,7 @@ Complete set of 11 verified UX & Scientific Comparison screenshots in [`docs/scr
 - [`03_resized_layout.png`](docs/screenshots/03_resized_layout.png) — Resized Map / Sidebar layout (`584px` sidebar via draggable splitter + `Reset Width` button).
 - [`04_before_visualization.png`](docs/screenshots/04_before_visualization.png) — **Before (`2026-10-22`)** calibrated HH $\gamma^0$ backscatter visualization.
 - [`05_after_visualization.png`](docs/screenshots/05_after_visualization.png) — **After (`2026-11-03`)** calibrated HH $\gamma^0$ backscatter visualization.
-- [`06_change_visualization.png`](docs/screenshots/06_change_visualization.png) — **Change Map ($\Delta\text{dB}$)** with threshold controls (`Continuous`, `±2.0 dB`, `±3.0 dB Reference`, `±4.0 dB`) and diverging colorbar.
+- [`06_change_visualization.png`](docs/screenshots/06_change_visualization.png) — **Change Map ($\Delta\text{dB}$)** classified at the `±3.0 dB` reference threshold (`Continuous`, `±2.0 dB` and `±4.0 dB` are also selectable).
 - [`07_compatibility_failure_explore.png`](docs/screenshots/07_compatibility_failure_explore.png) — Simplified plain-language compatibility explanation in **Explore** mode.
 - [`08_compatibility_report_research.png`](docs/screenshots/08_compatibility_report_research.png) — Detailed 10-Gate Compatibility Report & CRID Policy (`P05036` vs `P05023`) in **Research** mode.
 - [`09_english_interface.png`](docs/screenshots/09_english_interface.png) — **English (`EN`)** interface with the on-map Before $\leftrightarrow$ After swipe divider (drag to compare `2026-10-22` and `2026-11-03`).

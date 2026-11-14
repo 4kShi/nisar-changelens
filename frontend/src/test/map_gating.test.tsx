@@ -189,6 +189,31 @@ describe('Map raster gating', () => {
     expect(screen.queryByTestId('swipe-divider')).not.toBeInTheDocument();
   });
 
+  it('does not claim the verified result in the title, caption or evidence ladder for a blocked pair', () => {
+    render(<App initialMode="research" />);
+    const tierRow = (title: string) => screen.getByText(title).closest('.tier-row');
+    const caption = () => document.querySelector('.map-caption') as HTMLElement;
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('(Verified Pair)');
+    expect(tierRow('4. Scientifically Comparable Pair')).toHaveClass('tier-passed');
+
+    const unverified = discoverCompatiblePairs('angiang-screening').find(
+      (p) => !p.hasLocalVerifiedRasterInAnGiang
+    );
+    fireEvent.click(screen.getByTestId(`load-pair-${unverified!.id}`));
+
+    expect(screen.getByRole('heading', { level: 1 })).not.toHaveTextContent('Verified Pair');
+    expect(caption()).toHaveTextContent('Selected pair not verified');
+    expect(caption()).not.toHaveTextContent('+0.417');
+    expect(tierRow('4. Scientifically Comparable Pair')).not.toHaveClass('tier-passed');
+    expect(tierRow('3. Valid Raster Coverage')).not.toHaveClass('tier-passed');
+    expect(screen.queryByText(/99\.91% valid/)).not.toBeInTheDocument();
+
+    fireEvent.click(within(screen.getByTestId('pair-blocked-banner')).getByRole('button'));
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('(Verified Pair)');
+    expect(tierRow('4. Scientifically Comparable Pair')).toHaveClass('tier-passed');
+  });
+
   it('does not offer the swipe for a pair that failed the gates', async () => {
     await renderAndLoadMap();
     fireEvent.click(screen.getByTestId('map-view-swipe'));

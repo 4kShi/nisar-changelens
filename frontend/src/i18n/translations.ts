@@ -42,6 +42,11 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'banner.pairBlockedBody':
       'The verified 2026-10-22 → 2026-11-03 change layers are hidden so they are not mistaken for this pair.',
     'explore.sec1.statusPairPending': '⚠ Selected pair not verified — change map hidden',
+    'area.angiangPendingLabel': 'An Giang — Tri Tôn / Cô Tô Window',
+    'area.angiangPendingDesc':
+      '10.94 km × 11.05 km screening window in An Giang Province (Tri Tôn / Cô Tô). The selected observation pair has not passed the compatibility gates here, so no change result is shown for it. The verified pair for this window is 2026-10-22 → 2026-11-03.',
+    'area.angiangPendingSummary':
+      'Selected pair not verified for this window. Statistics from the verified 2026-10-22 → 2026-11-03 pair are hidden until that pair is selected.',
     'hud.tier1Catalog': 'TIER 1: MEKONG CATALOG (29 GRANULES)',
     'hud.provincePrefix': 'Province:',
     'hud.btnAnGiang': 'An Giang Verified AOI',
@@ -73,12 +78,6 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
 
     // Swipe Dock on Map
     'swipe.dockAria': 'Before and After NISAR HH backscatter swipe comparison',
-    'swipe.title': 'Before / After Calibrated Backscatter Swipe',
-    'swipe.subtitle':
-      'An Giang [104.95, 10.45, 105.05, 10.55] · EPSG:32648 10 m · 1,207,740 valid pixels',
-    'swipe.badge': 'REAL NISAR L2 GCOV V1',
-    'swipe.beforeAlt': 'Before: 2026-10-22 NISAR HHHH gamma-0 dB',
-    'swipe.afterAlt': 'After: 2026-11-03 NISAR HHHH gamma-0 dB',
     'swipe.tagLeft': '2026-10-22 (Before · Mean -8.74 dB)',
     'swipe.tagRight': '2026-11-03 (After · Mean -8.33 dB)',
     'swipe.splitLabel': 'Swipe Split',
@@ -413,6 +412,11 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'banner.pairBlockedBody':
       'Các lớp biến động đã xác thực 2026-10-22 → 2026-11-03 được ẩn để không bị nhầm là kết quả của cặp ảnh này.',
     'explore.sec1.statusPairPending': '⚠ Cặp ảnh đã chọn chưa xác thực — đã ẩn bản đồ biến động',
+    'area.angiangPendingLabel': 'An Giang — Cửa sổ Tri Tôn / Cô Tô',
+    'area.angiangPendingDesc':
+      'Cửa sổ sàng lọc 10,94 km × 11,05 km tại tỉnh An Giang (Tri Tôn / Cô Tô). Cặp ảnh đang chọn chưa vượt qua các cổng kiểm tra tương thích tại đây, nên không hiển thị kết quả biến động cho cặp này. Cặp ảnh đã xác thực của cửa sổ này là 2026-10-22 → 2026-11-03.',
+    'area.angiangPendingSummary':
+      'Cặp ảnh đang chọn chưa được xác thực cho cửa sổ này. Số liệu của cặp đã xác thực 2026-10-22 → 2026-11-03 được ẩn cho đến khi chọn lại cặp đó.',
     'hud.tier1Catalog': 'TẦNG 1: DANH MỤC ĐBSCL (29 GRANULE)',
     'hud.provincePrefix': 'Tỉnh/Thành:',
     'hud.btnAnGiang': 'AOI An Giang (Đã xác thực)',
@@ -444,12 +448,6 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
 
     // Swipe Dock on Map
     'swipe.dockAria': 'So sánh trượt tán xạ ngược HH NISAR Trước và Sau',
-    'swipe.title': 'So sánh trượt Tán xạ ngược (Backscatter) Trước / Sau',
-    'swipe.subtitle':
-      'An Giang [104.95, 10.45, 105.05, 10.55] · EPSG:32648 10 m · 1.207.740 điểm ảnh hợp lệ',
-    'swipe.badge': 'DỮ LIỆU THẬT NISAR L2 GCOV V1',
-    'swipe.beforeAlt': 'Trước: 2026-10-22 NISAR HHHH gamma-0 dB',
-    'swipe.afterAlt': 'Sau: 2026-11-03 NISAR HHHH gamma-0 dB',
     'swipe.tagLeft': '22/10/2026 (Trước · TB -8,74 dB)',
     'swipe.tagRight': '03/11/2026 (Sau · TB -8,33 dB)',
     'swipe.splitLabel': 'Tỷ lệ thanh trượt',
