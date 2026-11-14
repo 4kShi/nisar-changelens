@@ -4,7 +4,7 @@
 > **NASA Space Apps Challenge 2026** — Challenge: **Dancing with the SARs**  
 > **Team**: **4/K** (Local Event: Hanoi, Vietnam)
 
-[![Automated Tests](https://img.shields.io/badge/Tests-68%2F68%20Passing%20(43%20Python%20%2B%2025%20Web)-10b981)](#15-testing-and-verification)
+[![Automated Tests](https://img.shields.io/badge/Tests-76%2F76%20Passing%20(43%20Python%20%2B%2033%20Web)-10b981)](#15-testing-and-verification)
 [![NISAR Data](https://img.shields.io/badge/Dataset-NISAR__L2__GCOV__V1%20(CRID%20P05036)-38bdf8)](#8-verified-scientific-case-study-an-giang)
 [![Bilingual UI](https://img.shields.io/badge/UI-English%20%7C%20Ti%E1%BA%BFng%20Vi%E1%BB%87t%20(EN%20%7C%20VI)-7dd3bd)](#6-solution-and-key-features)
 [![License](https://img.shields.io/badge/License-MIT-f59e0b)](LICENSE)
@@ -221,7 +221,7 @@ Full dependency trees and license verifications are documented in [`docs/LICENSE
 | `maplibre-gl` | `6.18.0` | `BSD-3-Clause` | WebGL map, GeoJSON footprints & georeferenced SAR raster overlays |
 | `typescript` | `7.0.2` | `Apache-2.0` | Static type checking (`tsc -b`) |
 | `vite` / `@vitejs/plugin-react` | `8.3.8` / `6.3.0` | `MIT` | Static bundle compilation & local preview server |
-| `vitest` / `jsdom` / `@testing-library/*` | `5.1.0` / `31.0.1` | `MIT` | 17 automated unit, data-contract & bilingual i18n tests |
+| `vitest` / `jsdom` / `@testing-library/*` | `5.1.0` / `31.0.1` | `MIT` | 33 automated unit, data-contract, gating, UX & bilingual i18n tests |
 
 ### Python Pipeline (`requirements.txt`)
 | Package | Verified Version | License | Purpose |
@@ -303,13 +303,13 @@ PYTHONPATH=. python3 pipeline/extract_verified_pair.py
 
 ## 15. Testing and Verification
 
-Run all **68 automated tests** (`43` Python pipeline tests + `25` Frontend Vitest tests across `4` test files) and verify the production build:
+Run all **76 automated tests** (`43` Python pipeline tests + `33` Frontend Vitest tests across `5` test files) and verify the production build:
 
 ```bash
 # 1. Run Python pipeline unit, timeout, byte-budget & SHA-256 integrity tests (43 passed)
 PYTHONPATH=. pytest -q tests/pipeline
 
-# 2. Run Frontend unit, data-contract, 10-gate, UX & bilingual EN/VI i18n tests (25 passed)
+# 2. Run Frontend unit, data-contract, 10-gate, UX & bilingual EN/VI i18n tests (33 passed)
 cd frontend
 npm test -- --run
 

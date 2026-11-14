@@ -161,4 +161,21 @@ describe('Bilingual EN / VI Language Switcher & i18n System', () => {
       screen.getByText('Comparison Unavailable / Blocked by Compatibility Gates')
     ).toBeInTheDocument();
   });
+
+  it('localizes primary layer cards, pair count pill, excluded dates, and blocked provenance notice into Vietnamese', () => {
+    render(<App />);
+    fireEvent.click(screen.getByTestId('lang-btn-vi'));
+
+    expect(screen.getByText('-8,74 dB TB')).toBeInTheDocument();
+    expect(screen.getByText('-8,33 dB TB')).toBeInTheDocument();
+    expect(screen.getByText('Biến đổi TB +0,42 dB')).toBeInTheDocument();
+    expect(screen.getByText('50% chia')).toBeInTheDocument();
+    expect(screen.getByText(/cặp$/i)).toBeInTheDocument();
+    expect(screen.getByText('1.084 (22/10) / 1.090 (03/11)')).toBeInTheDocument();
+
+    // Every EN key has an identical VI counterpart
+    expect(Object.keys(TRANSLATIONS.vi).sort()).toEqual(
+      Object.keys(TRANSLATIONS.en).sort()
+    );
+  });
 });

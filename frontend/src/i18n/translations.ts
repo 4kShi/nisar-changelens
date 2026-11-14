@@ -66,12 +66,6 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
 
     // Map Layer Bar
     'layer.groupAria': 'NISAR raster layer selector',
-    'layer.barLabel': 'NISAR GCOV Layer:',
-    'layer.swipe': 'Before/After Swipe + ΔdB Map',
-    'layer.beforeDb': 'Oct 22 γ⁰ (dB)',
-    'layer.afterDb': 'Nov 03 γ⁰ (dB)',
-    'layer.changeDb': 'Continuous Δγ⁰ (dB)',
-    'layer.changeClasses': 'Classified ±3.0 dB',
     'layer.validMask': 'Valid Mask (99.91%)',
     'layer.opacity': 'Opacity',
     'layer.opacityAria': 'Raster overlay opacity',
@@ -110,7 +104,6 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'legend.backscatterLow': '-25 dB (dark/smooth water)',
     'legend.backscatterHigh': '0 dB (bright/double-bounce)',
     'legend.classesPrefix': 'Classes:',
-    'legend.classesStable': 'Stable ±3 dB (116.09 km²)',
     'legend.deltaPrefix': 'Δγ⁰ (Nov 03 − Oct 22):',
     'legend.deltaDec': '-6 dB (Blue Decrease)',
     'legend.deltaZero': '0 dB (White)',
@@ -207,6 +200,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'sec3.statTo': 'to',
     'sec3.statStdPrefix': 'Std',
     'sec3.statExcluded': 'Excluded Pixels',
+    'sec3.statExcludedDates': '1,084 Oct 22 / 1,090 Nov 03',
     'sec3.classDec': 'Strong Decrease (Δγ⁰ ≤ −3.0 dB)',
     'sec3.classNeutral': 'Stable / Within ±3.0 dB',
     'sec3.classInc': 'Strong Increase (Δγ⁰ ≥ +3.0 dB)',
@@ -216,7 +210,6 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
       'Preview clearly labeled Software Test Fixture (UI verification only)',
 
     // Section 04: Scientific Interpretation
-    'sec4.eyebrow': 'SCIENTIFIC INTERPRETATION',
     'sec4.title': '3-Level Evidence Hierarchy & Q&A',
     'sec4.level1Tag': 'LEVEL 1 — OBSERVED RADAR CHANGE (DIRECTLY MEASURED)',
     'sec4.level1VerifiedBody':
@@ -255,6 +248,8 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'sec5.colEvidence': 'Observed Evidence',
     'sec5.badgePass': 'PASS',
     'sec5.badgeBlocked': 'BLOCKED',
+    'sec5.blockedArchiveNote':
+      'Blocked pair notice: The HTTP Range ledger and SHA-256 provenance below document the bundled An Giang reference bundle (2026-10-22 → 2026-11-03), not the currently blocked selection.',
     'sec5.dtBudget': 'HTTP Range Budget Ledger',
     'sec5.budgetCap': 'Shared Budget Cap:',
     'sec5.budgetMask': 'Mask Checkpoint',
@@ -296,9 +291,13 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     // Primary Map Layer Switcher (BEFORE | AFTER | CHANGE | SWIPE)
     'primaryLayer.label': 'Map View:',
     'primaryLayer.before': 'BEFORE (Oct 22)',
+    'primaryLayer.beforeSub': '-8.74 dB mean',
     'primaryLayer.after': 'AFTER (Nov 03)',
+    'primaryLayer.afterSub': '-8.33 dB mean',
     'primaryLayer.change': 'CHANGE MAP (ΔdB)',
+    'primaryLayer.changeSub': '+0.42 dB mean shift',
     'primaryLayer.swipe': 'BEFORE ↔ AFTER SWIPE',
+    'primaryLayer.swipeSubSuffix': 'split',
     'primaryLayer.resetOpacity': 'Reset (90%)',
     'primaryLayer.thresholdLabel': 'Change View Style:',
     'primaryLayer.cautionNote':
@@ -306,11 +305,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'primaryLayer.invalidSwatch': 'Excluded / Invalid (0.09%)',
 
     // Explore Mode — Section 1: Location
-    'explore.sec1.step': '1',
     'explore.sec1.eyebrow': 'LOCATION',
-    'explore.sec1.title': 'Where are you exploring?',
-    'explore.sec1.locationLabel': 'Study Area / Location',
-    'explore.sec1.provinceLabel': 'Or jump to a Mekong Delta Province',
     'explore.sec1.coordsSummary': 'Show technical coordinates & area details',
     'explore.sec1.statusReady': '✓ Verified Satellite Change Map Available (99.91% valid coverage)',
     'explore.sec1.statusOffSwath':
@@ -319,9 +314,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
       'ℹ Regional / Province Overview (Select An Giang Window to view the pixel-level Change Map)',
 
     // Explore Mode — Section 2: Time Comparison & Compatible Pair Discovery
-    'explore.sec2.step': '2',
     'explore.sec2.eyebrow': 'TIME COMPARISON',
-    'explore.sec2.title': 'Observation Dates & Compatibility',
     'explore.sec2.intervalBadge': 'days between observations',
     'explore.sec2.comparableBadge': '✓ Scientifically Comparable Pair (Level 3 Verified)',
     'explore.sec2.geometricBadge': '◐ Geometrically Compatible Candidate (Level 2 — Catalog Only)',
@@ -330,11 +323,9 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
       'Dates were automatically ordered chronologically (Earlier → Later) so Change = Later − Earlier.',
     'explore.sec2.swapOrderBtn': 'Auto-Order Chronologically (Earlier → Later)',
     'explore.sec2.pairFinderTitle': 'Compatible Observation Pair Finder',
+    'explore.sec2.pairsCountSuffix': 'pairs',
     'explore.sec2.pairFinderSubtitle':
       'Automatically grouped from 29 NASA CMR granules by matching orbit Track, Frame & viewing geometry:',
-    'explore.sec2.level3Heading': 'Level 3 — Raster-Verified Compatible Pair (Ready to View)',
-    'explore.sec2.level2Heading':
-      'Level 2 — Geometrically Compatible Repeat-Pass Candidates (Catalog Metadata Verified)',
     'explore.sec2.selectPairBtn': 'Load Pair',
     'explore.sec2.activePairTag': 'Active Pair',
     'explore.sec2.whyBlockedBtn': "Why can't these images be compared?",
@@ -343,7 +334,6 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
       'Comparing two SAR acquisitions requires consistent calibration software. Pairs sharing Validated CRID P05036 (v1.0.20) pass Gate 7 directly. Repeat-pass pairs sharing Provisional CRID P05023 have consistent internal software but provisional maturity, while cross-CRID pairs (P05023 → P05036) require radiometric offset verification before pixel subtraction.',
 
     // Explore Mode — Section 3: What Changed?
-    'explore.sec3.step': '3',
     'explore.sec3.eyebrow': 'WHAT CHANGED?',
     'explore.sec3.title': 'Surface Radar Change Summary',
     'explore.sec3.leadText':
@@ -362,15 +352,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
       'Colors show measured changes in L-band radar backscatter (Δγ⁰ in dB). Backscatter change is NOT a direct water or flood map: positive change does not always mean flooding, and negative change does not always mean drying.',
 
     // Explore Mode — Section 4: Explore More (Progressive Disclosure)
-    'explore.sec4.step': '4',
-    'explore.sec4.eyebrow': 'EXPLORE MORE',
-    'explore.sec4.title': 'Optional Details & Scientific Context',
     'explore.sec4.accStats': 'Change Statistics & Numerical Breakdown',
-    'explore.sec4.accObs': 'Satellite Observation Details (Oct 22 & Nov 03)',
-    'explore.sec4.accQuality': 'Data Quality, Valid Coverage & Speckle Filtering',
-    'explore.sec4.accInterpret': 'Scientific Interpretation & Frequently Asked Questions',
-    'explore.sec4.qualityBody':
-      '99.91% of the An Giang window (1,207,740 of 1,208,870 pixels = 120.77 km²) contains valid positive radar measurements on both dates. 1,130 boundary pixels (0.09%) are excluded so invalid data never contaminate neighboring pixels during 5×5 boxcar speckle filtering.',
   },
 
   vi: {
@@ -436,12 +418,6 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
 
     // Map Layer Bar
     'layer.groupAria': 'Bộ chọn lớp ảnh raster NISAR',
-    'layer.barLabel': 'Lớp NISAR GCOV:',
-    'layer.swipe': 'Trượt Trước/Sau + Bản đồ ΔdB',
-    'layer.beforeDb': '22/10 γ⁰ (dB)',
-    'layer.afterDb': '03/11 γ⁰ (dB)',
-    'layer.changeDb': 'Biến động liên tục Δγ⁰ (dB)',
-    'layer.changeClasses': 'Phân lớp ±3,0 dB',
     'layer.validMask': 'Mask hợp lệ (99,91%)',
     'layer.opacity': 'Độ mờ',
     'layer.opacityAria': 'Độ mờ lớp phủ raster',
@@ -480,7 +456,6 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'legend.backscatterLow': '-25 dB (tối/mặt nước phẳng)',
     'legend.backscatterHigh': '0 dB (sáng/tán xạ kép double-bounce)',
     'legend.classesPrefix': 'Phân lớp:',
-    'legend.classesStable': 'Ổn định ±3 dB (116,09 km²)',
     'legend.deltaPrefix': 'Δγ⁰ (03/11 − 22/10):',
     'legend.deltaDec': '-6 dB (Xanh: Giảm)',
     'legend.deltaZero': '0 dB (Trắng)',
@@ -577,6 +552,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'sec3.statTo': 'đến',
     'sec3.statStdPrefix': 'Độ lệch chuẩn',
     'sec3.statExcluded': 'Điểm ảnh loại trừ',
+    'sec3.statExcludedDates': '1.084 (22/10) / 1.090 (03/11)',
     'sec3.classDec': 'Giảm mạnh (Δγ⁰ ≤ −3,0 dB)',
     'sec3.classNeutral': 'Ổn định / Trong ngưỡng ±3,0 dB',
     'sec3.classInc': 'Tăng mạnh (Δγ⁰ ≥ +3,0 dB)',
@@ -586,7 +562,6 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
       'Xem trước mẫu giả lập kiểm thử phần mềm (chỉ dùng kiểm tra giao diện)',
 
     // Section 04: Scientific Interpretation
-    'sec4.eyebrow': 'DIỄN GIẢI KHOA HỌC',
     'sec4.title': 'Hệ thống bằng chứng 3 cấp độ & Hỏi đáp (Q&A)',
     'sec4.level1Tag': 'CẤP ĐỘ 1 — BIẾN ĐỘNG TÍN HIỆU RADAR QUAN SÁT ĐƯỢC (ĐO TRỰC TIẾP)',
     'sec4.level1VerifiedBody':
@@ -625,6 +600,8 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'sec5.colEvidence': 'Bằng chứng ghi nhận',
     'sec5.badgePass': 'ĐẠT',
     'sec5.badgeBlocked': 'CHẶN',
+    'sec5.blockedArchiveNote':
+      'Lưu ý cặp bị chặn: Sổ cái HTTP Range và mã kiểm tra SHA-256 bên dưới ghi nhận bộ dữ liệu tham chiếu An Giang đã đóng gói sẵn (2026-10-22 → 2026-11-03), không phải cặp ảnh đang bị chặn.',
     'sec5.dtBudget': 'Sổ cái hạn mức dung lượng HTTP Range',
     'sec5.budgetCap': 'Hạn mức dung lượng chung:',
     'sec5.budgetMask': 'Checkpoint Mask',
@@ -666,9 +643,13 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     // Primary Map Layer Switcher (BEFORE | AFTER | CHANGE | SWIPE)
     'primaryLayer.label': 'Chế độ xem Bản đồ:',
     'primaryLayer.before': 'TRƯỚC (22/10)',
+    'primaryLayer.beforeSub': '-8,74 dB TB',
     'primaryLayer.after': 'SAU (03/11)',
+    'primaryLayer.afterSub': '-8,33 dB TB',
     'primaryLayer.change': 'BẢN ĐỒ BIẾN ĐỘNG (ΔdB)',
+    'primaryLayer.changeSub': 'Biến đổi TB +0,42 dB',
     'primaryLayer.swipe': 'KÉO TRƯỢT TRƯỚC ↔ SAU',
+    'primaryLayer.swipeSubSuffix': 'chia',
     'primaryLayer.resetOpacity': 'Đặt lại (90%)',
     'primaryLayer.thresholdLabel': 'Kiểu hiển thị biến động:',
     'primaryLayer.cautionNote':
@@ -676,11 +657,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     'primaryLayer.invalidSwatch': 'Điểm ảnh loại trừ / Không hợp lệ (0,09%)',
 
     // Explore Mode — Section 1: Location
-    'explore.sec1.step': '1',
     'explore.sec1.eyebrow': 'VỊ TRÍ QUAN SÁT',
-    'explore.sec1.title': 'Bạn đang khám phá khu vực nào?',
-    'explore.sec1.locationLabel': 'Khu vực nghiên cứu / Vị trí',
-    'explore.sec1.provinceLabel': 'Hoặc chọn nhanh Tỉnh / Thành phố ĐBSCL',
     'explore.sec1.coordsSummary': 'Xem tọa độ kỹ thuật & diện tích chi tiết',
     'explore.sec1.statusReady': '✓ Đã có Bản đồ Biến động Vệ tinh xác thực (99,91% diện tích hợp lệ)',
     'explore.sec1.statusOffSwath':
@@ -689,9 +666,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
       'ℹ Tổng quan Vùng / Tỉnh (Hãy chọn Cửa sổ An Giang để xem Bản đồ Biến động chi tiết)',
 
     // Explore Mode — Section 2: Time Comparison & Compatible Pair Discovery
-    'explore.sec2.step': '2',
     'explore.sec2.eyebrow': 'SO SÁNH THỜI GIAN',
-    'explore.sec2.title': 'Ngày quan sát & Độ tương thích',
     'explore.sec2.intervalBadge': 'ngày giữa hai lần quan sát',
     'explore.sec2.comparableBadge': '✓ Cặp quan sát tương thích khoa học (Đã xác thực Cấp 3)',
     'explore.sec2.geometricBadge': '◐ Tương thích hình học quỹ đạo (Cấp 2 — Mới có trên danh mục)',
@@ -700,11 +675,9 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
       'Hệ thống đã tự động sắp xếp ngày theo đúng thứ tự thời gian (Trước → Sau) để Biến động = Sau − Trước.',
     'explore.sec2.swapOrderBtn': 'Tự động đảo lại đúng thứ tự thời gian (Trước → Sau)',
     'explore.sec2.pairFinderTitle': 'Bộ Tìm Kiếm Cặp Quan Sát Tương Thích',
+    'explore.sec2.pairsCountSuffix': 'cặp',
     'explore.sec2.pairFinderSubtitle':
       'Tự động gom nhóm từ 29 granule NASA CMR theo cùng quỹ đạo Track, Frame & góc nhìn radar:',
-    'explore.sec2.level3Heading': 'Cấp 3 — Cặp ảnh đã xác thực Raster (Sẵn sàng hiển thị)',
-    'explore.sec2.level2Heading':
-      'Cấp 2 — Các cặp lặp lại tương thích hình học quỹ đạo (Đã kiểm tra siêu dữ liệu danh mục)',
     'explore.sec2.selectPairBtn': 'Chọn cặp này',
     'explore.sec2.activePairTag': 'Đang chọn',
     'explore.sec2.whyBlockedBtn': 'Vì sao chưa thể so sánh hai ảnh này?',
@@ -713,7 +686,6 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
       'So sánh hai ảnh SAR đòi hỏi phần mềm hiệu chuẩn đồng nhất. Các cặp cùng mã CRID P05036 (v1.0.20) đã xác thực sẽ vượt qua Cổng 7 trực tiếp. Các cặp lặp lại cùng mã CRID P05023 có phần mềm nội bộ đồng nhất nhưng thuộc bản Provisional, còn các cặp khác CRID (P05023 → P05036) cần kiểm tra độ lệch hiệu chuẩn bức xạ trước khi trừ điểm ảnh.',
 
     // Explore Mode — Section 3: What Changed?
-    'explore.sec3.step': '3',
     'explore.sec3.eyebrow': 'ĐIỀU GÌ ĐÃ THAY ĐỔI?',
     'explore.sec3.title': 'Tóm tắt biến động bề mặt qua Radar',
     'explore.sec3.leadText':
@@ -732,14 +704,6 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
       'Màu sắc biểu thị độ thay đổi tán xạ ngược radar băng tần L (Δγ⁰ tính bằng dB). Bản đồ biến động phản xạ radar KHÔNG đồng nghĩa với bản đồ ngập lụt trực tiếp: phản xạ tăng không phải lúc nào cũng là ngập, và phản xạ giảm không phải lúc nào cũng là cạn nước.',
 
     // Explore Mode — Section 4: Explore More (Progressive Disclosure)
-    'explore.sec4.step': '4',
-    'explore.sec4.eyebrow': 'KHÁM PHÁ THÊM',
-    'explore.sec4.title': 'Chi tiết tùy chọn & Bối cảnh khoa học',
     'explore.sec4.accStats': 'Thống kê biến động & Bảng số liệu chi tiết',
-    'explore.sec4.accObs': 'Thông tin đợt chụp vệ tinh (22/10 & 03/11)',
-    'explore.sec4.accQuality': 'Chất lượng dữ liệu, Độ phủ hợp lệ & Lọc nhiễu Speckle',
-    'explore.sec4.accInterpret': 'Diễn giải khoa học & Câu hỏi thường gặp (Q&A)',
-    'explore.sec4.qualityBody':
-      '99,91% diện tích cửa sổ An Giang (1.207.740 / 1.208.870 điểm ảnh = 120,77 km²) có giá trị đo radar hợp lệ ở cả hai ngày. 1.130 điểm ảnh rìa (0,09%) được loại trừ hoàn toàn để không làm nhiễu các điểm ảnh lân cận trong quá trình lọc trung bình không gian 5×5.',
   },
 };

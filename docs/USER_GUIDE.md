@@ -190,7 +190,7 @@ In the **Change View Style** bar (on the map HUD or in Section 3), compare:
 Drag the **`Opacity`** slider (`10%–100%`) on the Map HUD to blend the radar overlay with the underlying commune/district basemap labels. Click **`Reset (90%)`** to snap back to default opacity.
 
 ### 11. Read Plain-Language Summaries & Statistics
-In **Section 3 (What Changed?)**, read the color-coded summary cards explaining the exact area (`km²`) and percentage (`%`) for decreases, stable terrain, and increases. Expand **Quantitative Backscatter Change Statistics** (in Section 4) for `mean (+0.417 dB)`, `median (+0.30 dB)`, `5th–95th percentile (-1.22 to +2.49 dB)`, and standard deviation (`1.17 dB`).
+In **Section 3 (What Changed?)**, read the color-coded summary cards explaining the exact area (`km²`) and percentage (`%`) for decreases, stable terrain, and increases. Expand **Change Statistics & Numerical Breakdown** (in Section 4) for `mean (+0.417 dB)`, `median (+0.240 dB)`, `5th–95th percentile (-1.186 to +2.663 dB)`, and standard deviation (`1.277 dB`).
 
 ### 12. Open `Research & Gates` for Full Scientific Provenance
 Click **`Research & Gates`** in the top-right header (or **`Open Research & Gates Workbench →`**) to reveal:

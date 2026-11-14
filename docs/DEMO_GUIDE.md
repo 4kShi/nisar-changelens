@@ -64,15 +64,15 @@ Open **`http://127.0.0.1:4173/`** in your browser. The application opens directl
 
 ## 3. Verified Application Screenshots
 
-All screenshots are stored in [`docs/screenshots/`](screenshots/):
-- `01_main_app_angiang_verified.png` — Main workspace with An Giang verified $\Delta\gamma^0$ overlay and Before/After swipe dock.
-- `02_mekong_overview_and_swath_footprints.png` — Regional Mekong Delta view showing 13 provinces and the tilted Track 148 swath boundary separating An Giang (99.91% valid) from Đồng Tháp (0% valid).
-- `03_nisar_data_explorer_29_granules.png` — NISAR Data Explorer with 29 authentic NASA CMR granules.
-- `04_before_after_comparison_and_stats.png` — Before–After comparison controls and calibrated quantitative statistics card.
-- `05_dong_thap_0pct_diagnostic_blocked.png` — Fail-closed diagnostic state for the off-swath Đồng Tháp pilot bbox.
-- `06_scientific_interpretation_and_qa.png` — 3-Level Scientific Interpretation hierarchy and Q&A assistant.
-- `07_10_gates_and_provenance.png` — 10-gate compatibility matrix, HTTP range byte-budget ledger, and SHA-256 provenance.
-- `08_bilingual_en_verified_angiang.png` — Bilingual `EN | VI` switcher active in English (`EN`) with verified An Giang pair.
-- `09_bilingual_vi_verified_angiang.png` — Instantaneous switch to Vietnamese (`VI`) preserving AOI, swipe split, and exact scientific metrics.
-- `10_bilingual_vi_interpretation_qa.png` — Vietnamese 3-Level Scientific Interpretation hierarchy & Evidence-Based Q&A.
-- `11_bilingual_vi_10_compatibility_gates.png` — Vietnamese 10 Compatibility Gates (`10/10 CỔNG · ĐÃ XÁC THỰC SHA-256`) and HTTP Range Budget Ledger.
+All current verification screenshots are stored in [`docs/screenshots/`](screenshots/):
+- `01_explore_mode.png` — Default **Explore** mode centered on the verified An Giang screening window (`[104.95, 10.45, 105.05, 10.55]`, `99.91%` valid coverage).
+- `02_research_gates_mode.png` — **Research & Gates** mode exposing technical metadata, 29-granule catalog, 10-gate verification matrix, and HTTP Range provenance.
+- `03_resized_layout.png` — Resizable workspace splitter allowing the user to expand either the interactive MapLibre canvas or the side analysis rail.
+- `04_before_visualization.png` — `BEFORE (Oct 22)` calibrated $\gamma^0_{\text{HH}}$ grayscale overlay (`-8.742 dB` boxcar mean).
+- `05_after_visualization.png` — `AFTER (Nov 03)` calibrated $\gamma^0_{\text{HH}}$ grayscale overlay (`-8.325 dB` boxcar mean).
+- `06_change_visualization.png` — `CHANGE MAP (ΔdB)` with threshold style switching (`±2.0`, `±3.0`, `±4.0 dB` classified or continuous `ΔdB`).
+- `07_compatibility_failure_explore.png` — Fail-closed Explore state when switching to the off-swath Đồng Tháp pilot bbox (`0%` valid pixels).
+- `08_compatibility_report_research.png` — Research & Gates 10-gate diagnostic report explaining why incompatible or off-swath pairs are blocked.
+- `09_english_interface.png` — On-map `BEFORE ↔ AFTER SWIPE` interactive split comparison in English (`EN`) with continuous vector boundaries across both panes.
+- `10_vietnamese_interface.png` — Instantaneous bilingual switch to Vietnamese (`VI`) preserving active AOI, swipe/layer selection, and exact verified figures.
+- `11_mobile_responsive.png` — Responsive narrow-viewport (`390×844`) layout verification.

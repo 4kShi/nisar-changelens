@@ -435,9 +435,14 @@ export function MapStage({
     const map = mapRef.current;
     if (!map || !mapReady) return;
     const customVis = area === 'custom-aoi' ? 'visible' : 'none';
-    if (map.getLayer('custom-bbox-fill')) {
-      map.setLayoutProperty('custom-bbox-fill', 'visibility', customVis);
-      map.setLayoutProperty('custom-bbox-line', 'visibility', customVis);
+    for (const m of [map, compareMapRef.current]) {
+      if (!m || (typeof m.isStyleLoaded === 'function' && !m.isStyleLoaded())) continue;
+      if (m.getLayer('custom-bbox-fill')) {
+        m.setLayoutProperty('custom-bbox-fill', 'visibility', customVis);
+      }
+      if (m.getLayer('custom-bbox-line')) {
+        m.setLayoutProperty('custom-bbox-line', 'visibility', customVis);
+      }
     }
   }, [area, mapReady]);
 
@@ -474,9 +479,13 @@ export function MapStage({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
-    const src = map.getSource('custom-bbox') as maplibregl.GeoJSONSource | undefined;
-    if (src) {
-      src.setData(bboxToGeoJsonFeature(customBbox, 'Custom User AOI'));
+    const nextData = bboxToGeoJsonFeature(customBbox, 'Custom User AOI');
+    for (const m of [map, compareMapRef.current]) {
+      if (!m || (typeof m.isStyleLoaded === 'function' && !m.isStyleLoaded())) continue;
+      const src = m.getSource('custom-bbox') as maplibregl.GeoJSONSource | undefined;
+      if (src) {
+        src.setData(nextData);
+      }
     }
   }, [customBbox, mapReady]);
 
@@ -484,14 +493,20 @@ export function MapStage({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
-    const src = map.getSource('granule-footprints') as maplibregl.GeoJSONSource | undefined;
-    if (src) {
-      src.setData(buildFootprintsGeoJson(highlightedConceptIds));
-    }
+    const nextFootprints = buildFootprintsGeoJson(highlightedConceptIds);
     const vis = showFootprints ? 'visible' : 'none';
-    if (map.getLayer('granule-footprints-fill')) {
-      map.setLayoutProperty('granule-footprints-fill', 'visibility', vis);
-      map.setLayoutProperty('granule-footprints-line', 'visibility', vis);
+    for (const m of [map, compareMapRef.current]) {
+      if (!m || (typeof m.isStyleLoaded === 'function' && !m.isStyleLoaded())) continue;
+      const src = m.getSource('granule-footprints') as maplibregl.GeoJSONSource | undefined;
+      if (src) {
+        src.setData(nextFootprints);
+      }
+      if (m.getLayer('granule-footprints-fill')) {
+        m.setLayoutProperty('granule-footprints-fill', 'visibility', vis);
+      }
+      if (m.getLayer('granule-footprints-line')) {
+        m.setLayoutProperty('granule-footprints-line', 'visibility', vis);
+      }
     }
   }, [showFootprints, highlightedConceptIds, mapReady]);
 
@@ -533,27 +548,111 @@ export function MapStage({
     const container = compareHost.current;
     if (!swipeActive || !mapReady || !main || !container) return;
 
+    const mainStyle = typeof main.getStyle === 'function' ? main.getStyle() : undefined;
+    const vectorSourceIds = [
+      'granule-footprints',
+      'provinces',
+      'mekong-boundary',
+      'angiang-bbox',
+      'dongthap-bbox',
+      'custom-bbox',
+    ] as const;
+    const vectorLayerIds = [
+      'province-lines',
+      'mekong-boundary-line',
+      'granule-footprints-line',
+      'angiang-bbox-line',
+      'dongthap-bbox-line',
+      'custom-bbox-line',
+    ] as const;
+
+    const emptyFc: FeatureCollection<Polygon> = { type: 'FeatureCollection', features: [] };
+    const fallbackSources: maplibregl.StyleSpecification['sources'] = {
+      'granule-footprints': { type: 'geojson', data: buildFootprintsGeoJson(highlightedConceptIds) },
+      provinces: { type: 'geojson', data: emptyFc },
+      'mekong-boundary': { type: 'geojson', data: emptyFc },
+      'angiang-bbox': { type: 'geojson', data: AN_GIANG_SCREENING_BBOX },
+      'dongthap-bbox': { type: 'geojson', data: DONG_THAP_PILOT_BBOX },
+      'custom-bbox': { type: 'geojson', data: bboxToGeoJsonFeature(customBbox, 'Custom User AOI') },
+    };
+    const fallbackLayers: maplibregl.LayerSpecification[] = [
+      {
+        id: 'province-lines',
+        type: 'line',
+        source: 'provinces',
+        paint: { 'line-color': '#94a3b8', 'line-width': 0.85, 'line-opacity': 0.5 },
+      },
+      {
+        id: 'mekong-boundary-line',
+        type: 'line',
+        source: 'mekong-boundary',
+        paint: { 'line-color': '#5eead4', 'line-width': 2.2, 'line-opacity': 0.9 },
+      },
+      {
+        id: 'granule-footprints-line',
+        type: 'line',
+        source: 'granule-footprints',
+        layout: { visibility: showFootprints ? 'visible' : 'none' },
+        paint: { 'line-color': '#38bdf8', 'line-width': 1.2 },
+      },
+      {
+        id: 'angiang-bbox-line',
+        type: 'line',
+        source: 'angiang-bbox',
+        paint: { 'line-color': '#10b981', 'line-width': 2.5 },
+      },
+      {
+        id: 'dongthap-bbox-line',
+        type: 'line',
+        source: 'dongthap-bbox',
+        paint: { 'line-color': '#f59e0b', 'line-width': 2.2, 'line-dasharray': [3, 2] },
+      },
+      {
+        id: 'custom-bbox-line',
+        type: 'line',
+        source: 'custom-bbox',
+        layout: { visibility: (area as string) === 'custom-aoi' ? 'visible' : 'none' },
+        paint: { 'line-color': '#c084fc', 'line-width': 2.2, 'line-dasharray': [2, 2] },
+      },
+    ];
+
+    const compareSources: maplibregl.StyleSpecification['sources'] = {
+      'swipe-after': {
+        type: 'image',
+        url: `${base}${VERIFIED_ANGIANG_PAIR_STATS.overlays.after_db}`,
+        coordinates: VERIFIED_ANGIANG_PAIR_STATS.maplibreCoordinates,
+      },
+    };
+    for (const srcId of vectorSourceIds) {
+      compareSources[srcId] = mainStyle?.sources?.[srcId] ?? fallbackSources[srcId];
+    }
+
+    const compareLayers: maplibregl.LayerSpecification[] = [
+      {
+        id: 'swipe-after',
+        type: 'raster',
+        source: 'swipe-after',
+        paint: { 'raster-opacity': 1, 'raster-resampling': 'nearest' },
+      },
+    ];
+    for (const layerId of vectorLayerIds) {
+      const cloned = mainStyle?.layers?.find((l) => l.id === layerId);
+      const fallback = fallbackLayers.find((l) => l.id === layerId);
+      if (cloned) {
+        compareLayers.push(cloned);
+      } else if (fallback) {
+        compareLayers.push(fallback);
+      }
+    }
+
     let compare: MapLibreMap;
     try {
       compare = new maplibregl.Map({
         container,
         style: {
           version: 8,
-          sources: {
-            'swipe-after': {
-              type: 'image',
-              url: `${base}${VERIFIED_ANGIANG_PAIR_STATS.overlays.after_db}`,
-              coordinates: VERIFIED_ANGIANG_PAIR_STATS.maplibreCoordinates,
-            },
-          },
-          layers: [
-            {
-              id: 'swipe-after',
-              type: 'raster',
-              source: 'swipe-after',
-              paint: { 'raster-opacity': 1, 'raster-resampling': 'nearest' },
-            },
-          ],
+          sources: compareSources,
+          layers: compareLayers,
         },
         center: main.getCenter(),
         zoom: main.getZoom(),

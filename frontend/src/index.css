@@ -2307,20 +2307,41 @@ summary:focus-visible {
     gap: 6px;
   }
   .map-stage {
-    min-height: 440px;
+    min-height: 520px;
   }
   .map-hud-top {
+    top: 8px;
+    left: 8px;
     right: 44px;
     gap: 4px;
+  }
+  .map-area-pill,
+  .map-tool-chip,
+  .map-layer-chip,
+  .map-opacity-control {
+    padding: 4px 7px;
+    font-size: 9px;
+  }
+  .map-layer-bar {
+    gap: 3px;
+    padding: 3px;
   }
   .threshold-inline-group {
     display: none;
   }
   .map-key {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
     padding: 5px 8px;
+    gap: 3px;
     font-size: 9px;
   }
-  .legend-caution-line {
+  .map-key-items {
+    gap: 4px 8px;
+  }
+  .legend-caution-line,
+  .legend-caution-note {
     display: none;
   }
   .map-swipe-tag {

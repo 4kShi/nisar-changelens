@@ -129,8 +129,8 @@ Full details are recorded in [`docs/LICENSES_AND_ATTRIBUTION.md`](LICENSES_AND_A
 
 ### Final Rerun of All Verification Checks (2026-11-14)
 1. **Python Pipeline Test Suite (`PYTHONPATH=. pytest -q tests/pipeline`)**: **`43 passed`**
-2. **Frontend Unit, Contract, UX Optimization & Bilingual i18n Suite (`npm test -- --run`)**: **`25 passed`** (`4` test files)
-3. **Total Automated Tests**: **`68 / 68 passed`**
+2. **Frontend Unit, Contract, UX Optimization, Gating & Bilingual i18n Suite (`npm test -- --run`)**: **`33 passed`** (`5` test files)
+3. **Total Automated Tests**: **`76 / 76 passed`**
 4. **TypeScript & Vite Production Build (`npm run build`)**: **Succeeded (`0` errors)**
 5. **SHA-256 Verification of Packaged Scientific Outputs**: **11 / 11 files in `data/raw/nisar_subsets/angiang_verified_pair_20261022_20261103/` and 4 / 4 baseline PNGs in `frontend/public/data/verified-angiang/` match `verified_pair_manifest.json` bit-for-bit.**
 6. **Live Browser Smoke Test (`http://127.0.0.1:4173/`)**: Verified `Explore` vs `Research & Gates` modes, resizable map/sidebar splitter, `Before` / `After` / `Change Map` / `Swipe` layers, threshold presets (`Continuous`, `±2.0 dB`, `±3.0 dB Reference`, `±4.0 dB`), 22-pair Compatible Observation Finder, English (`EN`) and Vietnamese (`VI`) language switching, and Mobile (`390x844`) responsive layout with `0` console errors.

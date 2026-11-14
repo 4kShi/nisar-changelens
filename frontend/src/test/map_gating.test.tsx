@@ -167,11 +167,28 @@ describe('Map raster gating', () => {
     await renderAndLoadMap();
     fireEvent.click(screen.getByTestId('map-view-swipe'));
 
-    // Main map shows only BEFORE; a second map holds only the AFTER raster.
+    // Main map shows only BEFORE; the right-hand swipe pane holds AFTER plus vector
+    // boundary overlays above it so administrative/study outlines remain visible.
     expect(visibleRasters()).toEqual(['raster-before_db']);
     expect(mapState.instances).toHaveLength(2);
     const compare = mapState.instances[1];
-    expect(compare.options.style?.layers?.map((l) => l.id)).toEqual(['swipe-after']);
+    const compareLayers = (compare.options.style?.layers ?? []) as Array<{
+      id: string;
+      type?: string;
+    }>;
+    expect(
+      compareLayers.filter((l) => l.type === 'raster').map((l) => l.id)
+    ).toEqual(['swipe-after']);
+    expect(compareLayers[0]?.id).toBe('swipe-after');
+    expect(compareLayers.map((l) => l.id)).toEqual([
+      'swipe-after',
+      'province-lines',
+      'mekong-boundary-line',
+      'granule-footprints-line',
+      'angiang-bbox-line',
+      'dongthap-bbox-line',
+      'custom-bbox-line',
+    ]);
 
     // The AFTER pane is clipped at the divider, which is keyboard operable.
     const pane = screen.getByTestId('swipe-after-pane');
@@ -225,5 +242,37 @@ describe('Map raster gating', () => {
     expect(screen.queryByTestId('swipe-divider')).not.toBeInTheDocument();
     expect(visibleRasters()).toEqual([]);
     expect(mapState.instances[1].removed).toBe(true);
+  });
+
+  it('blocks cross-track pairs (T148 vs T155) and clarifies reference archive provenance', async () => {
+    await renderAndLoadMap();
+    fireEvent.click(screen.getByTestId('mode-btn-research'));
+
+    // Cross-track / cross-direction pair: Track 148 DESC (G4404304390-ASF) vs Track 155 ASC (G4404063067-ASF)
+    fireEvent.change(screen.getByTestId('select-after-granule'), {
+      target: { value: 'G4404063067-ASF' },
+    });
+
+    expect(visibleRasters()).toEqual([]);
+    expect(screen.getByTestId('blocked-archive-notice')).toBeInTheDocument();
+  });
+
+  it('blocks CRID-mismatched repeat-pass pair on Track 148 Frame 83 (P05023 vs P05036)', async () => {
+    await renderAndLoadMap();
+    fireEvent.click(screen.getByTestId('mode-btn-research'));
+
+    // Same Track 148 Frame 83 DESCENDING, but Oct 10 PROVISIONAL P05023 vs Nov 03 VALIDATED P05036
+    fireEvent.change(screen.getByTestId('select-before-granule'), {
+      target: { value: 'G4360284951-ASF' },
+    });
+
+    expect(visibleRasters()).toEqual([]);
+    expect(screen.getByTestId('hud-tier-pill')).toHaveTextContent(
+      /Selected pair not verified/i
+    );
+    expect(screen.getByTestId('area-evidence-badge')).toHaveTextContent(
+      /Pending validation/i
+    );
+    expect(screen.getByTestId('blocked-archive-notice')).toBeInTheDocument();
   });
 });

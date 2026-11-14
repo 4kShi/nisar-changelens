@@ -269,6 +269,11 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
     [afterConceptId]
   );
 
+  const highlightedConceptIds = useMemo(
+    () => [beforeConceptId, afterConceptId],
+    [beforeConceptId, afterConceptId]
+  );
+
   // What the workspace may claim about the active area for the *selected* pair.
   // The An Giang preset describes the verified 2026-10-22 → 2026-11-03 pair; when
   // another pair is selected those claims (label, summary, valid %, Tier 4) do not apply.
@@ -518,7 +523,7 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
             customBbox={customBbox}
             customClickMode={customClickMode}
             showFootprints={showFootprints}
-            highlightedConceptIds={[beforeConceptId, afterConceptId]}
+            highlightedConceptIds={highlightedConceptIds}
             pairVerified={compatibility.allPassed}
             overlayLayer={overlayLayer}
             overlayOpacity={overlayOpacity}
@@ -923,7 +928,9 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
               >
                 <summary>
                   <span>{t('explore.sec2.pairFinderTitle')}</span>
-                  <span className="pair-count-pill">{compatiblePairs.length} pairs</span>
+                  <span className="pair-count-pill">
+                    {compatiblePairs.length} {t('explore.sec2.pairsCountSuffix')}
+                  </span>
                 </summary>
                 <p className="pair-finder-sub">{t('explore.sec2.pairFinderSubtitle')}</p>
                 <div className="compatible-pair-list">
@@ -1010,7 +1017,7 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
                         onClick={() => setOverlayLayer('before_db')}
                       >
                         <strong>{t('primaryLayer.before')}</strong>
-                        <small>-8.74 dB mean</small>
+                        <small>{t('primaryLayer.beforeSub')}</small>
                       </button>
                       <button
                         type="button"
@@ -1018,7 +1025,7 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
                         onClick={() => setOverlayLayer('after_db')}
                       >
                         <strong>{t('primaryLayer.after')}</strong>
-                        <small>-8.33 dB mean</small>
+                        <small>{t('primaryLayer.afterSub')}</small>
                       </button>
                       <button
                         type="button"
@@ -1028,7 +1035,7 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
                         onClick={() => setOverlayLayer(activeThresholdPreset.overlayLayer)}
                       >
                         <strong>{t('primaryLayer.change')}</strong>
-                        <small>+0.42 dB mean shift</small>
+                        <small>{t('primaryLayer.changeSub')}</small>
                       </button>
                       <button
                         type="button"
@@ -1038,7 +1045,9 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
                         onClick={() => setOverlayLayer('swipe_before_after')}
                       >
                         <strong>{t('primaryLayer.swipe')}</strong>
-                        <small>{swipePercent}% split</small>
+                        <small>
+                          {swipePercent}% {t('primaryLayer.swipeSubSuffix')}
+                        </small>
                       </button>
                     </div>
 
@@ -1204,7 +1213,7 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
                         <div className="stat-cell">
                           <small>{t('sec3.statExcluded')}</small>
                           <strong>1,130 px (0.09%)</strong>
-                          <span>1,084 Oct 22 / 1,090 Nov 03</span>
+                          <span>{t('sec3.statExcludedDates')}</span>
                         </div>
                       </div>
 
@@ -1574,6 +1583,12 @@ function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
                   </tbody>
                 </table>
               </div>
+
+              {!compatibility.allPassed && (
+                <div className="auto-order-notice" role="status" data-testid="blocked-archive-notice">
+                  {t('sec5.blockedArchiveNote')}
+                </div>
+              )}
 
               <dl>
                 <div>
