@@ -19,7 +19,22 @@ export type OverlayLayerId =
   | 'after_db'
   | 'change_db'
   | 'change_classes'
+  | 'change_classes_2db'
+  | 'change_classes_4db'
   | 'mask_common_valid';
+
+export type VisualizationThresholdId = 'continuous' | '2.0' | '3.0' | '4.0';
+
+export type PairCompatibilityLevel =
+  | 'LEVEL_3_RASTER_VERIFIED'
+  | 'LEVEL_2_GEOMETRIC_CANDIDATE'
+  | 'LEVEL_1_CATALOG_ONLY';
+
+export type CridPolicyStatus =
+  | 'IDENTICAL_VALIDATED_CRID'
+  | 'IDENTICAL_PROVISIONAL_CRID'
+  | 'CROSS_CRID_REPEAT_PASS'
+  | 'MISMATCHED';
 
 export interface StudyAreaPreset {
   id: StudyAreaId;
@@ -526,6 +541,8 @@ export const VERIFIED_ANGIANG_PAIR_STATS = {
     after_db: 'data/verified-angiang/after_db.png',
     change_db: 'data/verified-angiang/change_db.png',
     change_classes: 'data/verified-angiang/change_classes.png',
+    change_classes_2db: 'data/verified-angiang/change_classes_2db.png',
+    change_classes_4db: 'data/verified-angiang/change_classes_4db.png',
     mask_common_valid: 'data/verified-angiang/mask_common_valid.png',
   },
   checksums: [
@@ -665,6 +682,325 @@ export function estimateBboxAreaKm2(bbox: [number, number, number, number]): num
   return Math.round(widthKm * heightKm * 100) / 100;
 }
 
+export interface VisualizationThresholdPreset {
+  id: VisualizationThresholdId;
+  thresholdDb: number | null;
+  overlayLayer: OverlayLayerId;
+  isReferenceBaseline: boolean;
+  label: string;
+  label_vi: string;
+  shortLabel: string;
+  shortLabel_vi: string;
+  decreasePixels: number;
+  decreaseAreaKm2: number;
+  decreasePct: number;
+  stablePixels: number;
+  stableAreaKm2: number;
+  stablePct: number;
+  increasePixels: number;
+  increaseAreaKm2: number;
+  increasePct: number;
+  note: string;
+  note_vi: string;
+}
+
+export const VISUALIZATION_THRESHOLD_PRESETS: ReadonlyArray<VisualizationThresholdPreset> = [
+  {
+    id: 'continuous',
+    thresholdDb: null,
+    overlayLayer: 'change_db',
+    isReferenceBaseline: true,
+    label: 'Continuous Change (Δγ⁰ dB: -6 to +6 dB)',
+    label_vi: 'Biến động liên tục (Δγ⁰ dB: -6 đến +6 dB)',
+    shortLabel: 'Continuous ΔdB',
+    shortLabel_vi: 'Liên tục ΔdB',
+    decreasePixels: 2905,
+    decreaseAreaKm2: 0.29,
+    decreasePct: 0.24,
+    stablePixels: 1160945,
+    stableAreaKm2: 116.09,
+    stablePct: 96.13,
+    increasePixels: 43890,
+    increaseAreaKm2: 4.39,
+    increasePct: 3.63,
+    note: 'Smooth diverging color scale from -6 dB (blue decrease) through 0 dB (neutral white) to +6 dB (red increase).',
+    note_vi:
+      'Thang màu phân kỳ liên tục từ -6 dB (xanh: giảm) qua 0 dB (trắng trung tính) đến +6 dB (đỏ: tăng).',
+  },
+  {
+    id: '2.0',
+    thresholdDb: 2.0,
+    overlayLayer: 'change_classes_2db',
+    isReferenceBaseline: false,
+    label: '±2.0 dB Threshold (Exploratory Sensitive View)',
+    label_vi: 'Ngưỡng ±2,0 dB (Hiển thị thăm dò độ nhạy cao)',
+    shortLabel: '±2.0 dB (Sensitive)',
+    shortLabel_vi: '±2,0 dB (Nhạy cao)',
+    decreasePixels: 12562,
+    decreaseAreaKm2: 1.26,
+    decreasePct: 1.04,
+    stablePixels: 1084631,
+    stableAreaKm2: 108.46,
+    stablePct: 89.81,
+    increasePixels: 110547,
+    increaseAreaKm2: 11.05,
+    increasePct: 9.15,
+    note: 'Exploratory display threshold (±2.0 dB). Highlights moderate backscatter variations alongside residual speckle; ±3.0 dB remains the verified reference baseline.',
+    note_vi:
+      'Ngưỡng hiển thị thăm dò (±2,0 dB). Làm nổi bật cả các biến động vừa phải lẫn nhiễu đốm dư; ±3,0 dB vẫn là ngưỡng tham chiếu chuẩn đã xác thực.',
+  },
+  {
+    id: '3.0',
+    thresholdDb: 3.0,
+    overlayLayer: 'change_classes',
+    isReferenceBaseline: true,
+    label: '±3.0 dB Threshold (Verified Reference Baseline)',
+    label_vi: 'Ngưỡng ±3,0 dB (Ngưỡng tham chiếu khoa học chuẩn)',
+    shortLabel: '±3.0 dB (Reference)',
+    shortLabel_vi: '±3,0 dB (Chuẩn)',
+    decreasePixels: 2905,
+    decreaseAreaKm2: 0.29,
+    decreasePct: 0.24,
+    stablePixels: 1160945,
+    stableAreaKm2: 116.09,
+    stablePct: 96.13,
+    increasePixels: 43890,
+    increaseAreaKm2: 4.39,
+    increasePct: 3.63,
+    note: 'Verified scientific reference threshold (±3.0 dB = 2× power change after 5×5 boxcar speckle filtering).',
+    note_vi:
+      'Ngưỡng tham chiếu khoa học đã xác thực (±3,0 dB = thay đổi gấp 2 lần công suất sau lọc nhiễu boxcar 5×5).',
+  },
+  {
+    id: '4.0',
+    thresholdDb: 4.0,
+    overlayLayer: 'change_classes_4db',
+    isReferenceBaseline: false,
+    label: '±4.0 dB Threshold (Exploratory Strong-Only View)',
+    label_vi: 'Ngưỡng ±4,0 dB (Chỉ hiển thị biến động rất mạnh)',
+    shortLabel: '±4.0 dB (Strong)',
+    shortLabel_vi: '±4,0 dB (Rất mạnh)',
+    decreasePixels: 965,
+    decreaseAreaKm2: 0.1,
+    decreasePct: 0.08,
+    stablePixels: 1188956,
+    stableAreaKm2: 118.9,
+    stablePct: 98.44,
+    increasePixels: 17819,
+    increaseAreaKm2: 1.78,
+    increasePct: 1.48,
+    note: 'Exploratory display threshold (±4.0 dB). Isolates only the strongest radar backscatter shifts; ±3.0 dB remains the verified reference baseline.',
+    note_vi:
+      'Ngưỡng hiển thị thăm dò (±4,0 dB). Cô lập những vùng có độ dịch chuyển tán xạ ngược mạnh nhất; ±3,0 dB vẫn là ngưỡng tham chiếu chuẩn đã xác thực.',
+  },
+];
+
+export function normalizeChronologicalPair(
+  firstConceptId: string,
+  secondConceptId: string
+): {
+  earlierConceptId: string;
+  laterConceptId: string;
+  wasSwapped: boolean;
+  intervalDays: number | null;
+} {
+  const g1 = DISCOVERED_GRANULES.find((g) => g.conceptId === firstConceptId);
+  const g2 = DISCOVERED_GRANULES.find((g) => g.conceptId === secondConceptId);
+  if (!g1 || !g2) {
+    return {
+      earlierConceptId: firstConceptId,
+      laterConceptId: secondConceptId,
+      wasSwapped: false,
+      intervalDays: null,
+    };
+  }
+  const t1 = Date.parse(g1.startUtc);
+  const t2 = Date.parse(g2.startUtc);
+  if (Number.isFinite(t1) && Number.isFinite(t2) && t1 > t2) {
+    const days = Math.round(Math.abs(t1 - t2) / (1000 * 60 * 60 * 24));
+    return {
+      earlierConceptId: secondConceptId,
+      laterConceptId: firstConceptId,
+      wasSwapped: true,
+      intervalDays: days,
+    };
+  }
+  const days =
+    Number.isFinite(t1) && Number.isFinite(t2)
+      ? Math.round(Math.abs(t2 - t1) / (1000 * 60 * 60 * 24))
+      : null;
+  return {
+    earlierConceptId: firstConceptId,
+    laterConceptId: secondConceptId,
+    wasSwapped: false,
+    intervalDays: days,
+  };
+}
+
+export interface CompatiblePairCandidate {
+  id: string;
+  earlier: CatalogGranule;
+  later: CatalogGranule;
+  intervalDays: number;
+  track: number;
+  frame: number;
+  direction: 'DESCENDING' | 'ASCENDING';
+  mode: string;
+  polarizationCode: string;
+  compatibilityLevel: PairCompatibilityLevel;
+  cridPolicyStatus: CridPolicyStatus;
+  hasLocalVerifiedRasterInAnGiang: boolean;
+  intersectsStudyArea: boolean;
+  badge: string;
+  badge_vi: string;
+  summary: string;
+  summary_vi: string;
+}
+
+/**
+ * Discovers all repeat-pass candidate pairs from the 29 authentic NASA CMR granules,
+ * grouped by identical orbital viewing geometry (Track, Frame, Pass Direction, Mode, Polarization)
+ * and ranked by scientific verification level (Level 3 Raster-Verified -> Level 2 Geometric Candidate).
+ */
+export function discoverCompatiblePairs(
+  studyAreaId: StudyAreaId = 'angiang-screening',
+  activeBbox?: [number, number, number, number]
+): CompatiblePairCandidate[] {
+  const targetBbox =
+    activeBbox ??
+    (STUDY_AREAS.find((a) => a.id === studyAreaId)?.bbox ?? [104.95, 10.45, 105.05, 10.55]);
+
+  const sorted = [...DISCOVERED_GRANULES].sort((a, b) =>
+    a.startUtc.localeCompare(b.startUtc)
+  );
+  const candidates: CompatiblePairCandidate[] = [];
+
+  for (let i = 0; i < sorted.length; i++) {
+    for (let j = i + 1; j < sorted.length; j++) {
+      const g1 = sorted[i];
+      const g2 = sorted[j];
+      if (g1.startUtc >= g2.startUtc) continue;
+      if (
+        g1.track !== g2.track ||
+        g1.frame !== g2.frame ||
+        g1.direction !== g2.direction ||
+        g1.mode !== g2.mode ||
+        g1.polarizationCode !== g2.polarizationCode
+      ) {
+        continue;
+      }
+
+      const t1 = Date.parse(g1.startUtc);
+      const t2 = Date.parse(g2.startUtc);
+      const intervalDays = Math.round((t2 - t1) / (1000 * 60 * 60 * 24));
+      const isAnGiangPair =
+        g1.conceptId === 'G4404304390-ASF' && g2.conceptId === 'G4410154671-ASF';
+      const intersectsStudyArea =
+        bboxesIntersect(g1.footprintBbox, targetBbox) &&
+        bboxesIntersect(g2.footprintBbox, targetBbox);
+
+      let cridPolicyStatus: CridPolicyStatus = 'MISMATCHED';
+      if (
+        g1.crid === g2.crid &&
+        g1.maturity === 'VALIDATED' &&
+        g2.maturity === 'VALIDATED'
+      ) {
+        cridPolicyStatus = 'IDENTICAL_VALIDATED_CRID';
+      } else if (g1.crid === g2.crid) {
+        cridPolicyStatus = 'IDENTICAL_PROVISIONAL_CRID';
+      } else {
+        cridPolicyStatus = 'CROSS_CRID_REPEAT_PASS';
+      }
+
+      let compatibilityLevel: PairCompatibilityLevel = 'LEVEL_2_GEOMETRIC_CANDIDATE';
+      let badge = '';
+      let badge_vi = '';
+      let summary = '';
+      let summary_vi = '';
+
+      if (isAnGiangPair && studyAreaId === 'angiang-screening') {
+        compatibilityLevel = 'LEVEL_3_RASTER_VERIFIED';
+        badge = 'Level 3 · Raster-Verified (99.91% Valid)';
+        badge_vi = 'Cấp 3 · Đã xác thực Raster (99,91% Hợp lệ)';
+        summary =
+          'Complete 10/10 gate pass in An Giang [104.95, 10.45, 105.05, 10.55]. Full Change Map & Before/After rasters ready.';
+        summary_vi =
+          'Đạt 10/10 cổng tại An Giang [104.95, 10.45, 105.05, 10.55]. Bản đồ Biến động & ảnh Trước/Sau đã sẵn sàng.';
+      } else if (isAnGiangPair && studyAreaId === 'dongthap-pilot') {
+        compatibilityLevel = 'LEVEL_1_CATALOG_ONLY';
+        badge = 'Rejected in Đồng Tháp (0% Swath Coverage)';
+        badge_vi = 'Bị từ chối tại Đồng Tháp (0% Vùng phủ)';
+        summary =
+          'Verified in An Giang (99.91% valid), but has 0.00% valid pixels in the Đồng Tháp diagnostic window (mask = 255).';
+        summary_vi =
+          'Hợp lệ 99,91% tại An Giang nhưng có 0,00% điểm ảnh hợp lệ tại ô chẩn đoán Đồng Tháp (mask = 255).';
+      } else if (isAnGiangPair) {
+        compatibilityLevel = 'LEVEL_2_GEOMETRIC_CANDIDATE';
+        badge = 'Level 3 Ready in An Giang Window';
+        badge_vi = 'Sẵn sàng Cấp 3 tại Cửa sổ An Giang';
+        summary =
+          'Validated Track 148 / Frame 083 pair (CRID P05036). Switch location to An Giang Window to view the 99.91%-verified Change Map.';
+        summary_vi =
+          'Cặp ảnh Track 148 / Frame 083 đã xác thực (CRID P05036). Chuyển vị trí sang Cửa sổ An Giang để xem Bản đồ Biến động (99,91% hợp lệ).';
+      } else if (cridPolicyStatus === 'IDENTICAL_VALIDATED_CRID') {
+        compatibilityLevel = 'LEVEL_2_GEOMETRIC_CANDIDATE';
+        badge = 'Level 2 · Validated Geometry & CRID (No Local Raster)';
+        badge_vi = 'Cấp 2 · Khớp Quỹ đạo & CRID chuẩn (Chưa tải Raster)';
+        summary = `Passes Gates 1–7 (Track ${g1.track} Frame ${g1.frame}, ${g1.direction}, Validated CRID ${g1.crid}). Pixel Change Map requires extracting the local HDF5 raster subset.`;
+        summary_vi = `Đạt Cổng 1–7 (Track ${g1.track} Frame ${g1.frame}, ${g1.direction}, CRID chuẩn ${g1.crid}). Cần trích xuất tập con raster HDF5 cục bộ để hiển thị Bản đồ Biến động.`;
+      } else if (cridPolicyStatus === 'IDENTICAL_PROVISIONAL_CRID') {
+        compatibilityLevel = 'LEVEL_2_GEOMETRIC_CANDIDATE';
+        badge = `Level 2 · Same-CRID Provisional (${g1.crid})`;
+        badge_vi = `Cấp 2 · Cùng CRID Tạm thời (${g1.crid})`;
+        summary = `Geometrically aligned repeat-pass pair on Track ${g1.track} Frame ${g1.frame} (${g1.direction}) with matching processor CRID ${g1.crid} (Provisional V1). Pending local HDF5 raster extraction.`;
+        summary_vi = `Cặp lặp lại cùng quỹ đạo Track ${g1.track} Frame ${g1.frame} (${g1.direction}) và cùng bộ xử lý CRID ${g1.crid} (Provisional V1). Đang chờ trích xuất tập con raster HDF5.`;
+      } else {
+        compatibilityLevel = 'LEVEL_2_GEOMETRIC_CANDIDATE';
+        badge = `Level 2 · Cross-CRID Geometry Match (${g1.crid}→${g2.crid})`;
+        badge_vi = `Cấp 2 · Khớp Quỹ đạo khác CRID (${g1.crid}→${g2.crid})`;
+        summary = `Identical orbital geometry (Track ${g1.track} Frame ${g1.frame}, ${g1.direction}), but crosses processor baseline ${g1.crid} → ${g2.crid}; requires radiometric offset check & HDF5 subset extraction.`;
+        summary_vi = `Cùng hình học quỹ đạo (Track ${g1.track} Frame ${g1.frame}, ${g1.direction}), nhưng chuyển phiên bản xử lý ${g1.crid} → ${g2.crid}; cần kiểm tra độ lệch bức xạ và trích xuất HDF5.`;
+      }
+
+      candidates.push({
+        id: `${g1.conceptId}_${g2.conceptId}`,
+        earlier: g1,
+        later: g2,
+        intervalDays,
+        track: g1.track,
+        frame: g1.frame,
+        direction: g1.direction,
+        mode: g1.mode,
+        polarizationCode: g1.polarizationCode,
+        compatibilityLevel,
+        cridPolicyStatus,
+        hasLocalVerifiedRasterInAnGiang: isAnGiangPair,
+        intersectsStudyArea,
+        badge,
+        badge_vi,
+        summary,
+        summary_vi,
+      });
+    }
+  }
+
+  const rankOrder = (c: CompatiblePairCandidate): number => {
+    if (c.hasLocalVerifiedRasterInAnGiang) return 0;
+    if (c.cridPolicyStatus === 'IDENTICAL_VALIDATED_CRID') return 1;
+    if (c.cridPolicyStatus === 'IDENTICAL_PROVISIONAL_CRID') return 2;
+    return 3;
+  };
+
+  return candidates.sort((a, b) => {
+    const rDiff = rankOrder(a) - rankOrder(b);
+    if (rDiff !== 0) return rDiff;
+    if (a.intersectsStudyArea !== b.intersectsStudyArea) {
+      return a.intersectsStudyArea ? -1 : 1;
+    }
+    return a.earlier.startUtc.localeCompare(b.earlier.startUtc);
+  });
+}
+
 /**
  * Evaluates all 10 scientific compatibility gates for two selected granules and the active AOI.
  */
@@ -674,9 +1010,19 @@ export function evaluatePairCompatibility(
   studyAreaId: StudyAreaId
 ): {
   allPassed: boolean;
+  compatibilityLevel: PairCompatibilityLevel;
+  compatibilityBadge: string;
+  compatibilityBadge_vi: string;
+  cridPolicyStatus: CridPolicyStatus;
+  sameGeometry: boolean;
+  sameCridCode: boolean;
+  isReversedOrder: boolean;
+  intervalDays: number | null;
   gates: CompatibilityGateResult[];
   summaryReason: string;
   summaryReason_vi: string;
+  plainExplanation: string;
+  plainExplanation_vi: string;
 } {
   const g1: CatalogGranule | undefined = DISCOVERED_GRANULES.find(
     (g) => g.conceptId === earlierConceptId
@@ -688,10 +1034,22 @@ export function evaluatePairCompatibility(
   if (!g1 || !g2) {
     return {
       allPassed: false,
+      compatibilityLevel: 'LEVEL_1_CATALOG_ONLY',
+      compatibilityBadge: 'Level 1 — Select Two Observations',
+      compatibilityBadge_vi: 'Cấp 1 — Chọn hai lần quan sát',
+      cridPolicyStatus: 'MISMATCHED',
+      sameGeometry: false,
+      sameCridCode: false,
+      isReversedOrder: false,
+      intervalDays: null,
       gates: [],
       summaryReason: 'Select two valid NISAR granules from the catalog to evaluate compatibility.',
       summaryReason_vi:
         'Vui lòng chọn hai granule NISAR hợp lệ từ danh mục để kiểm tra tính tương thích.',
+      plainExplanation:
+        'Please select two satellite observation dates to check whether they can be compared.',
+      plainExplanation_vi:
+        'Vui lòng chọn hai ngày quan sát vệ tinh để kiểm tra khả năng so sánh.',
     };
   }
 
@@ -700,15 +1058,36 @@ export function evaluatePairCompatibility(
     (g1.conceptId === 'G4410154671-ASF' && g2.conceptId === 'G4404304390-ASF');
 
   const sameOrder = g1.startUtc < g2.startUtc;
+  const isReversedOrder = g1.startUtc > g2.startUtc;
+  const t1 = Date.parse(g1.startUtc);
+  const t2 = Date.parse(g2.startUtc);
+  const intervalDays =
+    Number.isFinite(t1) && Number.isFinite(t2)
+      ? Math.round(Math.abs(t2 - t1) / (1000 * 60 * 60 * 24))
+      : null;
+
   const sameCollection =
     g1.collection === 'NISAR_L2_GCOV_V1' && g2.collection === 'NISAR_L2_GCOV_V1';
-  const samePol = g1.polarizationCode === g2.polarizationCode;
+  const samePol = g1.polarizationCode === g2.polarizationCode && g1.mode === g2.mode;
   const sameTrack = g1.track === g2.track;
   const sameFrame = g1.frame === g2.frame;
   const sameDirection = g1.direction === g2.direction;
-  const sameCrid = g1.crid === g2.crid && g1.maturity === 'VALIDATED' && g2.maturity === 'VALIDATED';
+  const sameGeometry = sameOrder && samePol && sameTrack && sameFrame && sameDirection;
+  const sameCridCode = g1.crid === g2.crid;
+  const sameCrid =
+    g1.crid === g2.crid && g1.maturity === 'VALIDATED' && g2.maturity === 'VALIDATED';
 
-  const isAnGiangVerified = isTargetCandidatePair && studyAreaId === 'angiang-screening' && sameOrder;
+  let cridPolicyStatus: CridPolicyStatus = 'MISMATCHED';
+  if (sameCrid) {
+    cridPolicyStatus = 'IDENTICAL_VALIDATED_CRID';
+  } else if (sameCridCode && sameGeometry) {
+    cridPolicyStatus = 'IDENTICAL_PROVISIONAL_CRID';
+  } else if (sameGeometry) {
+    cridPolicyStatus = 'CROSS_CRID_REPEAT_PASS';
+  }
+
+  const isAnGiangVerified =
+    isTargetCandidatePair && studyAreaId === 'angiang-screening' && sameOrder;
   const isDongThapDiagnostic = isTargetCandidatePair && studyAreaId === 'dongthap-pilot';
 
   const gates: CompatibilityGateResult[] = [
@@ -739,14 +1118,16 @@ export function evaluatePairCompatibility(
       name: 'Gate 2 — Same Frequency & Polarization Term',
       name_vi: 'Cổng 2 — Cùng dải tần số & Phân cực (Polarization)',
       passed: samePol,
-      expected: 'Frequency A / HHHH (DHDH dual-pol)',
-      expected_vi: 'Frequency A / HHHH (phân cực kép DHDH)',
-      observed: `${g1.polarizationCode} vs ${g2.polarizationCode}`,
-      observed_vi: `${g1.polarizationCode} so với ${g2.polarizationCode}`,
-      detail:
-        'Both scenes provide calibrated L-band Frequency A (20 MHz) HHHH backscatter covariance.',
-      detail_vi:
-        'Cả hai cảnh đều cung cấp hiệp phương sai tán xạ ngược HHHH băng tần L Frequency A (20 MHz) đã hiệu chuẩn.',
+      expected: 'Frequency A / HHHH (DHDH dual-pol, matching mode)',
+      expected_vi: 'Frequency A / HHHH (phân cực kép DHDH, cùng chế độ băng thông)',
+      observed: `${g1.polarizationCode} (Mode ${g1.mode}) vs ${g2.polarizationCode} (Mode ${g2.mode})`,
+      observed_vi: `${g1.polarizationCode} (Mode ${g1.mode}) so với ${g2.polarizationCode} (Mode ${g2.mode})`,
+      detail: samePol
+        ? 'Both scenes provide calibrated L-band HHHH backscatter covariance with identical bandwidth mode.'
+        : 'Different polarization modes or radar bandwidth configurations cannot be subtracted directly.',
+      detail_vi: samePol
+        ? 'Cả hai cảnh đều cung cấp hiệp phương sai tán xạ ngược HHHH băng tần L cùng chế độ băng thông.'
+        : 'Các chế độ phân cực hoặc băng thông radar khác nhau không thể trừ trực tiếp.',
     },
     {
       gateNumber: 3,
@@ -788,8 +1169,8 @@ export function evaluatePairCompatibility(
       name: 'Gate 5 — Same Orbit Pass Direction',
       name_vi: 'Cổng 5 — Cùng hướng bay quỹ đạo (Ascending / Descending)',
       passed: sameDirection,
-      expected: 'Descending vs Descending',
-      expected_vi: 'Quỹ đạo đi xuống (Descending) đồng nhất',
+      expected: `${g1.direction} vs ${g1.direction}`,
+      expected_vi: `Cùng hướng quỹ đạo (${g1.direction})`,
       observed: `${g1.direction} vs ${g2.direction}`,
       observed_vi: `${g1.direction} so với ${g2.direction}`,
       detail:
@@ -822,10 +1203,14 @@ export function evaluatePairCompatibility(
       observed_vi: `${g1.crid} (${g1.maturity}) so với ${g2.crid} (${g2.maturity})`,
       detail: sameCrid
         ? 'Both granules were generated with identical processor CRID P05036 (v1.0.20), avoiding radiometric processor bias.'
-        : 'Different CRID processor baselines (e.g. P05000 vs P05036) may introduce artificial calibration offsets.',
+        : sameCridCode
+          ? `Both granules share provisional processor CRID ${g1.crid}; consistent software baseline, but flagged as Provisional archive.`
+          : 'Different CRID processor baselines (e.g. P05023 vs P05036) may introduce calibration gain offsets.',
       detail_vi: sameCrid
         ? 'Cả hai granule đều được tạo bởi cùng bộ xử lý CRID P05036 (v1.0.20), loại trừ sai lệch hiệu chuẩn giữa các phiên bản phần mềm.'
-        : 'Các phiên bản CRID khác nhau (ví dụ P05000 và P05036) có thể gây sai lệch hiệu chuẩn bức xạ.',
+        : sameCridCode
+          ? `Cả hai granule cùng dùng bộ xử lý tạm thời CRID ${g1.crid}; đồng nhất phiên bản phần mềm nhưng thuộc bộ sưu tập Provisional.`
+          : 'Các phiên bản CRID khác nhau (ví dụ P05023 và P05036) có thể gây sai lệch hiệu chuẩn bức xạ.',
     },
     {
       gateNumber: 8,
@@ -909,31 +1294,98 @@ export function evaluatePairCompatibility(
   ];
 
   const allPassed = gates.every((g) => g.passed);
+
+  let compatibilityLevel: PairCompatibilityLevel = 'LEVEL_1_CATALOG_ONLY';
+  let compatibilityBadge = '';
+  let compatibilityBadge_vi = '';
   let summaryReason = '';
   let summaryReason_vi = '';
+  let plainExplanation = '';
+  let plainExplanation_vi = '';
+
   if (allPassed) {
+    compatibilityLevel = 'LEVEL_3_RASTER_VERIFIED';
+    compatibilityBadge = 'Level 3 — Raster-Verified Comparable Pair';
+    compatibilityBadge_vi = 'Cấp 3 — Cặp ảnh tương thích đã xác thực Raster';
     summaryReason =
       'All 10 scientific compatibility gates PASSED for the An Giang window [104.95, 10.45, 105.05, 10.55]. Calibrated before/after γ⁰ (dB) and Δγ⁰ (dB) comparison is enabled.';
     summaryReason_vi =
       'Đã vượt qua toàn bộ 10/10 cổng kiểm tra tính tương thích khoa học cho cửa sổ An Giang [104.95, 10.45, 105.05, 10.55]. Chức năng so sánh γ⁰ (dB) và Δγ⁰ (dB) đã được kích hoạt.';
+    plainExplanation =
+      'Both satellite observations were captured from the exact same viewing geometry 12 days apart and have 99.91% verified pixel coverage in this window.';
+    plainExplanation_vi =
+      'Cả hai ảnh vệ tinh được chụp từ cùng một góc nhìn quỹ đạo cách nhau 12 ngày và đạt 99,91% diện tích điểm ảnh hợp lệ tại khu vực này.';
   } else if (isDongThapDiagnostic) {
+    compatibilityLevel = 'LEVEL_1_CATALOG_ONLY';
+    compatibilityBadge = 'Rejected by Raster Check (0% Valid Coverage)';
+    compatibilityBadge_vi = 'Bị từ chối sau kiểm tra Raster (0% vùng phủ hợp lệ)';
     summaryReason =
       'Comparison BLOCKED by Gates 9 & 10: HDF5 subset extraction at [105.45, 10.60, 105.55, 10.70] proved 0.00% valid pixels (100% mask = 255 outside the tilted SAR swath). Switch to the An Giang Verified Window to inspect the 99.91%-valid pair.';
     summaryReason_vi =
       'So sánh bị CHẶN bởi Cổng 9 & 10: Kết quả trích xuất tập con HDF5 tại [105.45, 10.60, 105.55, 10.70] chứng minh 0,00% điểm ảnh hợp lệ (100% mask = 255 nằm ngoài dải quét nghiêng của SAR). Hãy chuyển sang Cửa sổ An Giang đã xác thực để xem cặp ảnh hợp lệ 99,91%.';
-  } else if (!sameTrack || !sameFrame || !sameDirection || !sameCrid || !sameOrder) {
+    plainExplanation =
+      'Although the catalog outline covers this Đồng Tháp window, the actual tilted satellite radar beam missed this area (0% valid pixels). No synthetic map is shown.';
+    plainExplanation_vi =
+      'Mặc dù khung bao danh mục đi qua ô Đồng Tháp này, dải quét nghiêng thực tế của radar vệ tinh nằm lệch khỏi khu vực này (0% điểm ảnh hợp lệ). Hệ thống không hiển thị bản đồ giả lập.';
+  } else if (sameGeometry) {
+    compatibilityLevel = 'LEVEL_2_GEOMETRIC_CANDIDATE';
+    compatibilityBadge = 'Level 2 — Geometrically Compatible Candidate (No Local Raster Subset)';
+    compatibilityBadge_vi = 'Cấp 2 — Khớp hình học quỹ đạo (Chưa có tập con Raster cục bộ)';
+    if (isTargetCandidatePair) {
+      summaryReason =
+        'Comparison PENDING raster subset verification for the currently selected AOI. Switch to "An Giang — Tri Tôn / Cô Tô Window" to view the verified 2026-10-22 vs 2026-11-03 raster comparison.';
+      summaryReason_vi =
+        'So sánh ĐANG CHỜ xác thực tập con raster cho vùng quan tâm (AOI) hiện tại. Hãy chọn "An Giang — Cửa sổ Tri Tôn / Cô Tô" để xem kết quả so sánh raster ngày 2026-10-22 và 2026-11-03 đã xác thực.';
+      plainExplanation =
+        'These two observations are scientifically compatible, and their verified Change Map is ready in the An Giang window. Switch the location to An Giang to see the pixel-level Change Map.';
+      plainExplanation_vi =
+        'Hai lần quan sát này hoàn toàn tương thích khoa học và đã có sẵn Bản đồ Biến động tại cửa sổ An Giang. Hãy chuyển vị trí sang An Giang để xem chi tiết.';
+    } else if (cridPolicyStatus === 'IDENTICAL_VALIDATED_CRID') {
+      summaryReason = `Level 2 Geometrically & Processor Compatible Pair (Track ${g1.track}, Frame ${g1.frame}, ${g1.direction}, Validated CRID ${g1.crid}). Passes Gates 1–7; pixel-level Change Map requires extracting the local HDF5 raster subset for this frame.`;
+      summaryReason_vi = `Cặp ảnh tương thích Cấp 2 về hình học & bộ xử lý (Track ${g1.track}, Frame ${g1.frame}, ${g1.direction}, CRID chuẩn ${g1.crid}). Đạt Cổng 1–7; cần trích xuất thêm tập con raster HDF5 cục bộ cho khung cảnh này để tạo Bản đồ Biến động.`;
+      plainExplanation = `These two observations share the exact same satellite orbit (Track ${g1.track}, Frame ${g1.frame}) and validated processor (${g1.crid}), making them geometrically compatible candidates. However, their high-resolution raster pixels have not been downloaded into this local demo package yet.`;
+      plainExplanation_vi = `Hai lần quan sát này có cùng quỹ đạo vệ tinh (Track ${g1.track}, Frame ${g1.frame}) và cùng bộ xử lý chuẩn (${g1.crid}), đạt mức tương thích hình học Cấp 2. Tuy nhiên, dữ liệu điểm ảnh độ phân giải cao của khung cảnh này chưa được tải sẵn trong gói demo cục bộ.`;
+    } else if (cridPolicyStatus === 'IDENTICAL_PROVISIONAL_CRID') {
+      summaryReason = `Level 2 Geometrically Compatible Provisional Pair (Track ${g1.track}, Frame ${g1.frame}, ${g1.direction}, matching Provisional CRID ${g1.crid}). Consistent orbital geometry and processor version, awaiting validated V1 release and local HDF5 subset extraction.`;
+      summaryReason_vi = `Cặp ảnh tạm thời tương thích hình học Cấp 2 (Track ${g1.track}, Frame ${g1.frame}, ${g1.direction}, cùng CRID tạm thời ${g1.crid}). Đồng nhất góc chụp và bộ xử lý nhưng thuộc bản Provisional và chưa tải tập con raster cục bộ.`;
+      plainExplanation = `These two observations share the same satellite orbit (Track ${g1.track}, Frame ${g1.frame}) and the same provisional processor version (${g1.crid}). They are geometrically aligned candidates, but local raster data are not bundled in this offline demo.`;
+      plainExplanation_vi = `Hai lần quan sát này có cùng quỹ đạo (Track ${g1.track}, Frame ${g1.frame}) và cùng phiên bản xử lý tạm thời (${g1.crid}). Chúng tương thích về góc chụp nhưng chưa có dữ liệu điểm ảnh cục bộ trong bản demo này.`;
+    } else {
+      summaryReason = `Level 2 Geometrically Compatible Repeat-Pass Pair (Track ${g1.track}, Frame ${g1.frame}, ${g1.direction}), but crosses processor version ${g1.crid} (${g1.maturity}) → ${g2.crid} (${g2.maturity}). Requires radiometric offset check and local HDF5 raster extraction.`;
+      summaryReason_vi = `Cặp ảnh lặp lại cùng quỹ đạo Cấp 2 (Track ${g1.track}, Frame ${g1.frame}, ${g1.direction}), nhưng khác phiên bản bộ xử lý ${g1.crid} (${g1.maturity}) → ${g2.crid} (${g2.maturity}). Cần kiểm tra độ lệch hiệu chuẩn bức xạ và trích xuất raster HDF5.`;
+      plainExplanation = `These two observations were captured from the same satellite orbit (Track ${g1.track}, Frame ${g1.frame}), so their viewing geometry matches. However, they were processed with two different software versions (${g1.crid} vs ${g2.crid}) and do not have local raster subsets bundled.`;
+      plainExplanation_vi = `Hai lần quan sát này được chụp từ cùng quỹ đạo (Track ${g1.track}, Frame ${g1.frame}) nên khớp góc nhìn. Tuy nhiên, chúng được xử lý bằng hai phiên bản phần mềm khác nhau (${g1.crid} và ${g2.crid}) và chưa có sẵn tập con raster cục bộ.`;
+    }
+  } else {
+    compatibilityLevel = 'LEVEL_1_CATALOG_ONLY';
+    compatibilityBadge = 'Level 1 — Incompatible Viewing Geometry / Order';
+    compatibilityBadge_vi = 'Cấp 1 — Không tương thích góc chụp quỹ đạo / thứ tự';
     summaryReason =
       'Comparison BLOCKED by orbital/processor geometry gates: Selected granules do not share identical chronological order, Track, Frame, Orbit Direction, and Validated CRID P05036.';
     summaryReason_vi =
       'So sánh bị CHẶN bởi các cổng hình học quỹ đạo/phiên bản xử lý: Hai granule đã chọn không có cùng thứ tự thời gian, Track, Frame, Hướng quỹ đạo hoặc phiên bản CRID P05036 đã xác thực.';
-  } else {
-    summaryReason =
-      'Comparison PENDING raster subset verification for the currently selected AOI. Switch to "An Giang — Tri Tôn / Cô Tô Window" to view the verified 2026-10-22 vs 2026-11-03 raster comparison.';
-    summaryReason_vi =
-      'So sánh ĐANG CHỜ xác thực tập con raster cho vùng quan tâm (AOI) hiện tại. Hãy chọn "An Giang — Cửa sổ Tri Tôn / Cô Tô" để xem kết quả so sánh raster ngày 2026-10-22 và 2026-11-03 đã xác thực.';
+    plainExplanation =
+      'This observation pair cannot be compared reliably because the two images were captured from different satellite orbit tracks, frames, or viewing angles.';
+    plainExplanation_vi =
+      'Cặp quan sát này không thể so sánh trực tiếp vì hai ảnh được chụp từ các quỹ đạo, khung cảnh hoặc góc nhìn radar khác nhau.';
   }
 
-  return { allPassed, gates, summaryReason, summaryReason_vi };
+  return {
+    allPassed,
+    compatibilityLevel,
+    compatibilityBadge,
+    compatibilityBadge_vi,
+    cridPolicyStatus,
+    sameGeometry,
+    sameCridCode,
+    isReversedOrder,
+    intervalDays,
+    gates,
+    summaryReason,
+    summaryReason_vi,
+    plainExplanation,
+    plainExplanation_vi,
+  };
 }
 
 export interface ScientificInterpretationQA {

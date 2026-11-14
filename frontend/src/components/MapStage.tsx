@@ -8,9 +8,11 @@ import {
   DONG_THAP_PILOT_BBOX,
   MEKONG_PROVINCES,
   VERIFIED_ANGIANG_PAIR_STATS,
+  VISUALIZATION_THRESHOLD_PRESETS,
   bboxToGeoJsonFeature,
   type OverlayLayerId,
   type StudyAreaId,
+  type VisualizationThresholdId,
 } from '../data/study';
 import { DISCOVERED_GRANULES } from '../data/catalogInventory';
 import { useI18n } from '../i18n/I18nContext';
@@ -18,6 +20,7 @@ import { useI18n } from '../i18n/I18nContext';
 export type MapState = 'loading' | 'ready' | 'boundary-error' | 'map-error';
 
 interface MapStageProps {
+  mode?: 'explore' | 'research';
   area: StudyAreaId;
   selectedProvince: string;
   customBbox: [number, number, number, number];
@@ -27,6 +30,7 @@ interface MapStageProps {
   overlayLayer: OverlayLayerId;
   overlayOpacity: number;
   swipePercent: number;
+  visualizationThreshold?: VisualizationThresholdId;
   showSyntheticFixture: boolean;
   onMapStateChange: (state: MapState) => void;
   onLocationSelect: (location: { longitude: number; latitude: number } | null) => void;
@@ -36,6 +40,7 @@ interface MapStageProps {
   onOverlayLayerChange: (layer: OverlayLayerId) => void;
   onOverlayOpacityChange: (opacity: number) => void;
   onSwipePercentChange: (pct: number) => void;
+  onVisualizationThresholdChange?: (thresh: VisualizationThresholdId) => void;
   onToggleFootprints: () => void;
   onToggleCustomClickMode: () => void;
   onResetSelection: () => void;
@@ -114,6 +119,7 @@ function buildFootprintsGeoJson(highlightedIds: string[]): FeatureCollection<Pol
 }
 
 export function MapStage({
+  mode = 'explore',
   area,
   selectedProvince,
   customBbox,
@@ -123,6 +129,7 @@ export function MapStage({
   overlayLayer,
   overlayOpacity,
   swipePercent,
+  visualizationThreshold = 'continuous',
   showSyntheticFixture,
   onMapStateChange,
   onLocationSelect,
@@ -132,11 +139,12 @@ export function MapStage({
   onOverlayLayerChange,
   onOverlayOpacityChange,
   onSwipePercentChange,
+  onVisualizationThresholdChange,
   onToggleFootprints,
   onToggleCustomClickMode,
   onResetSelection,
 }: MapStageProps) {
-  const { t } = useI18n();
+  const { t, pick } = useI18n();
   const host = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const loadedRef = useRef(false);
@@ -145,6 +153,19 @@ export function MapStage({
 
   const customClickModeRef = useRef(customClickMode);
   customClickModeRef.current = customClickMode;
+
+  // Automatically resize MapLibre canvas when container dimensions change (e.g. splitter drag)
+  useEffect(() => {
+    const el = host.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => {
+      if (mapRef.current && typeof mapRef.current.resize === 'function') {
+        mapRef.current.resize();
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!host.current) return;
@@ -294,6 +315,14 @@ export function MapStage({
           {
             id: 'raster-change_classes',
             url: `${base}${VERIFIED_ANGIANG_PAIR_STATS.overlays.change_classes}`,
+          },
+          {
+            id: 'raster-change_classes_2db',
+            url: `${base}${VERIFIED_ANGIANG_PAIR_STATS.overlays.change_classes_2db}`,
+          },
+          {
+            id: 'raster-change_classes_4db',
+            url: `${base}${VERIFIED_ANGIANG_PAIR_STATS.overlays.change_classes_4db}`,
           },
           {
             id: 'raster-mask_common_valid',
@@ -453,6 +482,8 @@ export function MapStage({
       'after_db',
       'change_db',
       'change_classes',
+      'change_classes_2db',
+      'change_classes_4db',
       'mask_common_valid',
     ];
 
@@ -466,6 +497,22 @@ export function MapStage({
   }, [area, overlayLayer, overlayOpacity]);
 
   const activeProvinceInfo = MEKONG_PROVINCES.find((p) => p.name === selectedProvince);
+  const isChangeLayerActive =
+    overlayLayer === 'change_db' ||
+    overlayLayer === 'change_classes' ||
+    overlayLayer === 'change_classes_2db' ||
+    overlayLayer === 'change_classes_4db';
+
+  const activeThresholdPreset =
+    VISUALIZATION_THRESHOLD_PRESETS.find((p) => p.id === visualizationThreshold) ??
+    VISUALIZATION_THRESHOLD_PRESETS[0];
+
+  const handlePrimaryChangeClick = () => {
+    const preset =
+      VISUALIZATION_THRESHOLD_PRESETS.find((p) => p.id === visualizationThreshold) ??
+      VISUALIZATION_THRESHOLD_PRESETS[0];
+    onOverlayLayerChange(preset.overlayLayer);
+  };
 
   return (
     <section className="map-stage" aria-label={t('map.interactiveAria')}>
@@ -538,29 +585,80 @@ export function MapStage({
           </button>
         </div>
 
-        {/* Layer Switcher when Verified An Giang AOI is active */}
+        {/* Prominent Visual Layer Bar when Verified An Giang AOI is active */}
         {area === 'angiang-screening' && (
           <div className="map-layer-bar" role="group" aria-label={t('layer.groupAria')}>
-            <span className="layer-bar-label">{t('layer.barLabel')}</span>
-            {(
-              [
-                ['swipe_before_after', t('layer.swipe')],
-                ['before_db', t('layer.beforeDb')],
-                ['after_db', t('layer.afterDb')],
-                ['change_db', t('layer.changeDb')],
-                ['change_classes', t('layer.changeClasses')],
-                ['mask_common_valid', t('layer.validMask')],
-              ] as const
-            ).map(([id, label]) => (
+            <span className="layer-bar-label">{t('primaryLayer.label')}</span>
+            <button
+              type="button"
+              data-testid="map-view-before"
+              className={`layer-chip ${overlayLayer === 'before_db' ? 'selected' : ''}`}
+              onClick={() => onOverlayLayerChange('before_db')}
+            >
+              {t('primaryLayer.before')}
+            </button>
+            <button
+              type="button"
+              data-testid="map-view-after"
+              className={`layer-chip ${overlayLayer === 'after_db' ? 'selected' : ''}`}
+              onClick={() => onOverlayLayerChange('after_db')}
+            >
+              {t('primaryLayer.after')}
+            </button>
+            <button
+              type="button"
+              data-testid="map-view-change"
+              className={`layer-chip layer-chip-change ${isChangeLayerActive ? 'selected' : ''}`}
+              onClick={handlePrimaryChangeClick}
+            >
+              {t('primaryLayer.change')}
+            </button>
+            <button
+              type="button"
+              data-testid="map-view-swipe"
+              className={`layer-chip ${overlayLayer === 'swipe_before_after' ? 'selected' : ''}`}
+              onClick={() => onOverlayLayerChange('swipe_before_after')}
+            >
+              {t('primaryLayer.swipe')}
+            </button>
+
+            {mode === 'research' && (
               <button
-                key={id}
                 type="button"
-                className={`layer-chip ${overlayLayer === id ? 'selected' : ''}`}
-                onClick={() => onOverlayLayerChange(id)}
+                data-testid="map-view-mask"
+                className={`layer-chip ${overlayLayer === 'mask_common_valid' ? 'selected' : ''}`}
+                onClick={() => onOverlayLayerChange('mask_common_valid')}
               >
-                {label}
+                {t('layer.validMask')}
               </button>
-            ))}
+            )}
+
+            {isChangeLayerActive && onVisualizationThresholdChange && (
+              <div className="threshold-inline-group">
+                <span className="layer-bar-label">{t('primaryLayer.thresholdLabel')}</span>
+                {VISUALIZATION_THRESHOLD_PRESETS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    data-testid={`threshold-btn-${preset.id}`}
+                    className={`thresh-chip ${
+                      visualizationThreshold === preset.id &&
+                      overlayLayer === preset.overlayLayer
+                        ? 'selected'
+                        : ''
+                    }`}
+                    onClick={() => {
+                      onVisualizationThresholdChange(preset.id);
+                      onOverlayLayerChange(preset.overlayLayer);
+                    }}
+                    title={pick(preset.note, preset.note_vi)}
+                  >
+                    {pick(preset.shortLabel, preset.shortLabel_vi)}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <label className="opacity-slider-label">
               {t('layer.opacity')} {Math.round(overlayOpacity * 100)}%
               <input
@@ -573,6 +671,15 @@ export function MapStage({
                 aria-label={t('layer.opacityAria')}
               />
             </label>
+            {Math.abs(overlayOpacity - 0.9) > 0.01 && (
+              <button
+                type="button"
+                className="opacity-reset-btn"
+                onClick={() => onOverlayOpacityChange(0.9)}
+              >
+                {t('primaryLayer.resetOpacity')}
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -672,56 +779,95 @@ export function MapStage({
 
       {/* Map Legend & Live Coordinates */}
       <div className="map-key" aria-label={t('legend.aria')}>
-        <div className="map-key-items">
-          <span>
-            <i className="key-line delta" />
-            {t('legend.mekong')}
-          </span>
-          <span>
-            <i className="key-line angiang" />
-            {t('legend.angiang')}
-          </span>
-          <span>
-            <i className="key-line dongthap" />
-            {t('legend.dongthap')}
-          </span>
-          {showFootprints && (
+        <div className="map-key-top-row">
+          <div className="map-key-items">
             <span>
-              <i className="key-line footprint" />
-              {t('legend.footprints')}
+              <i className="key-line delta" />
+              {t('legend.mekong')}
             </span>
-          )}
+            <span>
+              <i className="key-line angiang" />
+              {t('legend.angiang')}
+            </span>
+            <span>
+              <i className="key-line dongthap" />
+              {t('legend.dongthap')}
+            </span>
+            {showFootprints && (
+              <span>
+                <i className="key-line footprint" />
+                {t('legend.footprints')}
+              </span>
+            )}
+          </div>
+
+          <div className="map-cursor-readout">
+            {cursorCoords
+              ? `${t('legend.cursorPrefix')} ${cursorCoords.lat.toFixed(4)}° N, ${cursorCoords.lng.toFixed(4)}° E`
+              : t('legend.cursorPrompt')}{' '}
+            {activeProvinceInfo ? `| ${activeProvinceInfo.name}` : ''}
+          </div>
         </div>
 
         {area === 'angiang-screening' && (
           <div className="map-color-scale" aria-label={t('legend.radioAria')}>
             {overlayLayer === 'before_db' || overlayLayer === 'after_db' ? (
-              <span>
-                {t('legend.backscatterPrefix')} <strong>{t('legend.backscatterLow')}</strong> →{' '}
-                <strong>{t('legend.backscatterHigh')}</strong>
-              </span>
-            ) : overlayLayer === 'change_classes' ? (
-              <span>
-                {t('legend.classesPrefix')} <strong className="c-dec">■ ≤ -3 dB (0.29 km²)</strong> ·{' '}
-                <strong className="c-inc">■ ≥ +3 dB (4.39 km²)</strong> ·{' '}
-                <span>{t('legend.classesStable')}</span>
-              </span>
+              <div className="legend-scale-row">
+                <span>
+                  {t('legend.backscatterPrefix')} <strong>{t('legend.backscatterLow')}</strong>
+                </span>
+                <span className="legend-gradient-bar bar-grayscale" aria-hidden="true" />
+                <span>
+                  <strong>{t('legend.backscatterHigh')}</strong>
+                </span>
+                <span className="legend-invalid-pill">
+                  <i className="swatch-invalid" /> {t('primaryLayer.invalidSwatch')}
+                </span>
+              </div>
+            ) : overlayLayer === 'change_classes' ||
+              overlayLayer === 'change_classes_2db' ||
+              overlayLayer === 'change_classes_4db' ? (
+              <div className="legend-scale-row">
+                <span>
+                  {t('legend.classesPrefix')}{' '}
+                  <strong className="c-dec">
+                    ■ ≤ -{activeThresholdPreset.thresholdDb ?? 3} dB (
+                    {activeThresholdPreset.decreaseAreaKm2} km²)
+                  </strong>{' '}
+                  ·{' '}
+                  <strong className="c-inc">
+                    ■ ≥ +{activeThresholdPreset.thresholdDb ?? 3} dB (
+                    {activeThresholdPreset.increaseAreaKm2} km²)
+                  </strong>{' '}
+                  ·{' '}
+                  <span>
+                    ±{activeThresholdPreset.thresholdDb ?? 3} dB (
+                    {activeThresholdPreset.stableAreaKm2} km²)
+                  </span>
+                </span>
+                <span className="legend-invalid-pill">
+                  <i className="swatch-invalid" /> {t('primaryLayer.invalidSwatch')}
+                </span>
+              </div>
             ) : (
-              <span>
-                {t('legend.deltaPrefix')} <strong className="c-dec">{t('legend.deltaDec')}</strong> →{' '}
-                <strong>{t('legend.deltaZero')}</strong> →{' '}
-                <strong className="c-inc">{t('legend.deltaInc')}</strong>
-              </span>
+              <div className="legend-scale-row">
+                <span>
+                  {t('legend.deltaPrefix')}{' '}
+                  <strong className="c-dec">{t('legend.deltaDec')}</strong>
+                </span>
+                <span className="legend-gradient-bar bar-diverging" aria-hidden="true" />
+                <span>
+                  <strong>{t('legend.deltaZero')}</strong> →{' '}
+                  <strong className="c-inc">{t('legend.deltaInc')}</strong>
+                </span>
+                <span className="legend-invalid-pill">
+                  <i className="swatch-invalid" /> {t('primaryLayer.invalidSwatch')}
+                </span>
+              </div>
             )}
+            <small className="legend-caution-note">{t('primaryLayer.cautionNote')}</small>
           </div>
         )}
-
-        <div className="map-cursor-readout">
-          {cursorCoords
-            ? `${t('legend.cursorPrefix')} ${cursorCoords.lat.toFixed(4)}° N, ${cursorCoords.lng.toFixed(4)}° E`
-            : t('legend.cursorPrompt')}{' '}
-          {activeProvinceInfo ? `| ${activeProvinceInfo.name}` : ''}
-        </div>
       </div>
     </section>
   );

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MapStage, type MapState } from './components/MapStage';
 import {
   ACQUISITIONS,
@@ -8,29 +8,81 @@ import {
   SCIENTIFIC_QA_ITEMS,
   STUDY_AREAS,
   VERIFIED_ANGIANG_PAIR_STATS,
+  VISUALIZATION_THRESHOLD_PRESETS,
   bboxesIntersect,
+  discoverCompatiblePairs,
   estimateBboxAreaKm2,
   evaluatePairCompatibility,
+  normalizeChronologicalPair,
   type OverlayLayerId,
   type StudyAreaId,
   type StudyAreaPreset,
+  type VisualizationThresholdId,
 } from './data/study';
 import { DISCOVERED_GRANULES } from './data/catalogInventory';
 import { I18nProvider, useI18n } from './i18n/I18nContext';
 import type { Language } from './i18n/translations';
 
-type ViewMode = 'explore' | 'research';
+export type ViewMode = 'explore' | 'research';
 type RailSectionFilter = 'all' | 'aoi' | 'catalog' | 'compare' | 'interpret' | 'provenance';
 
-export function App({ initialLanguage }: { initialLanguage?: Language } = {}) {
+export const MODE_STORAGE_KEY = 'nisar-changelens-mode';
+export const RAIL_WIDTH_STORAGE_KEY = 'nisar-changelens-rail-width';
+const DEFAULT_RAIL_WIDTH = 440;
+const MIN_RAIL_WIDTH = 340;
+const MAX_RAIL_WIDTH = 720;
+const MIN_MAP_WIDTH = 360;
+
+function readInitialMode(defaultMode: ViewMode = 'explore'): ViewMode {
+  if (typeof window === 'undefined') return defaultMode;
+  try {
+    const saved = window.localStorage.getItem(MODE_STORAGE_KEY);
+    if (saved === 'explore' || saved === 'research') return saved;
+  } catch {
+    // Ignore storage errors
+  }
+  return defaultMode;
+}
+
+function readInitialRailWidth(): number {
+  if (typeof window === 'undefined') return DEFAULT_RAIL_WIDTH;
+  try {
+    const raw = window.localStorage.getItem(RAIL_WIDTH_STORAGE_KEY);
+    if (raw) {
+      const parsed = Number(raw);
+      if (Number.isFinite(parsed) && parsed >= MIN_RAIL_WIDTH && parsed <= MAX_RAIL_WIDTH) {
+        return Math.round(parsed);
+      }
+    }
+  } catch {
+    // Ignore storage errors
+  }
+  return DEFAULT_RAIL_WIDTH;
+}
+
+function clampRailWidth(width: number): number {
+  const maxAllowed =
+    typeof window !== 'undefined' && window.innerWidth > 900
+      ? Math.max(MIN_RAIL_WIDTH, Math.min(MAX_RAIL_WIDTH, window.innerWidth - MIN_MAP_WIDTH))
+      : MAX_RAIL_WIDTH;
+  return Math.round(Math.min(maxAllowed, Math.max(MIN_RAIL_WIDTH, width)));
+}
+
+export function App({
+  initialLanguage,
+  initialMode,
+}: {
+  initialLanguage?: Language;
+  initialMode?: ViewMode;
+} = {}) {
   return (
     <I18nProvider initialLanguage={initialLanguage}>
-      <AppWorkbench />
+      <AppWorkbench initialMode={initialMode} />
     </I18nProvider>
   );
 }
 
-function AppWorkbench() {
+function AppWorkbench({ initialMode }: { initialMode?: ViewMode }) {
   const { lang, setLang, t, pick } = useI18n();
 
   // Default to the verified An Giang window so users immediately see the working NISAR GCOV MVP
@@ -53,19 +105,117 @@ function AppWorkbench() {
   // Selected pair for comparison (defaults to verified Oct 22 & Nov 03 pair)
   const [beforeConceptId, setBeforeConceptId] = useState<string>('G4404304390-ASF');
   const [afterConceptId, setAfterConceptId] = useState<string>('G4410154671-ASF');
+  const [autoOrderNotice, setAutoOrderNotice] = useState<boolean>(false);
 
   // Map overlay & comparison controls
-  const [overlayLayer, setOverlayLayer] = useState<OverlayLayerId>('swipe_before_after');
+  // In Explore mode, default to 'change_db' so the dedicated Change Map is immediately visible
+  const [overlayLayer, setOverlayLayer] = useState<OverlayLayerId>('change_db');
+  const [visualizationThreshold, setVisualizationThreshold] =
+    useState<VisualizationThresholdId>('continuous');
   const [overlayOpacity, setOverlayOpacity] = useState<number>(0.9);
   const [swipePercent, setSwipePercent] = useState<number>(50);
   const [showSyntheticFixture, setShowSyntheticFixture] = useState<boolean>(false);
 
-  // Navigation & UI state
-  const [mode, setMode] = useState<ViewMode>('explore');
+  // Navigation, Mode & Resizable Splitter state
+  const [mode, setModeState] = useState<ViewMode>(() =>
+    initialMode ?? readInitialMode('explore')
+  );
+  const [railWidth, setRailWidth] = useState<number>(() => readInitialRailWidth());
+  const [isDraggingSplitter, setIsDraggingSplitter] = useState<boolean>(false);
   const [sectionFilter, setSectionFilter] = useState<RailSectionFilter>('all');
   const [activeQaId, setActiveQaId] = useState<string>(SCIENTIFIC_QA_ITEMS[0].id);
   const [mapState, setMapState] = useState<MapState>('loading');
   const [location, setLocation] = useState<{ longitude: number; latitude: number } | null>(null);
+
+  const setMode = useCallback((nextMode: ViewMode) => {
+    setModeState(nextMode);
+    try {
+      window.localStorage.setItem(MODE_STORAGE_KEY, nextMode);
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
+
+  const updateRailWidth = useCallback((nextWidth: number) => {
+    const clamped = clampRailWidth(nextWidth);
+    setRailWidth(clamped);
+    try {
+      window.localStorage.setItem(RAIL_WIDTH_STORAGE_KEY, String(clamped));
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
+
+  const handleResetRailWidth = useCallback(() => {
+    setRailWidth(DEFAULT_RAIL_WIDTH);
+    try {
+      window.localStorage.setItem(RAIL_WIDTH_STORAGE_KEY, String(DEFAULT_RAIL_WIDTH));
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
+
+  // Pointer drag handler for the vertical Map / Sidebar splitter
+  const handleSplitterPointerDown = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      setIsDraggingSplitter(true);
+
+      const handlePointerMove = (moveEvent: PointerEvent) => {
+        const proposedWidth = window.innerWidth - moveEvent.clientX;
+        updateRailWidth(proposedWidth);
+      };
+
+      const handlePointerUp = () => {
+        setIsDraggingSplitter(false);
+        window.removeEventListener('pointermove', handlePointerMove);
+        window.removeEventListener('pointerup', handlePointerUp);
+      };
+
+      window.addEventListener('pointermove', handlePointerMove);
+      window.addEventListener('pointerup', handlePointerUp);
+    },
+    [updateRailWidth]
+  );
+
+  const handleSplitterKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        updateRailWidth(railWidth + 24);
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        updateRailWidth(railWidth - 24);
+      } else if (event.key === 'Home') {
+        event.preventDefault();
+        handleResetRailWidth();
+      }
+    },
+    [railWidth, updateRailWidth, handleResetRailWidth]
+  );
+
+  // Keep splitter width within viewport bounds on window resize
+  useEffect(() => {
+    const onResize = () => {
+      setRailWidth((prev) => clampRailWidth(prev));
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // Automatically normalize chronological order when selecting observations in the UI
+  const handleSelectPairChronological = useCallback((firstId: string, secondId: string) => {
+    if (firstId === secondId) {
+      setBeforeConceptId(firstId);
+      setAfterConceptId(secondId);
+      setAutoOrderNotice(false);
+      return;
+    }
+    const normalized = normalizeChronologicalPair(firstId, secondId);
+    setBeforeConceptId(normalized.earlierConceptId);
+    setAfterConceptId(normalized.laterConceptId);
+    setAutoOrderNotice(normalized.wasSwapped);
+  }, []);
 
   const activeArea: StudyAreaPreset = useMemo(() => {
     if (area === 'custom-aoi') {
@@ -104,6 +254,33 @@ function AppWorkbench() {
     () => evaluatePairCompatibility(beforeConceptId, afterConceptId, area),
     [beforeConceptId, afterConceptId, area]
   );
+
+  const compatiblePairs = useMemo(
+    () => discoverCompatiblePairs(area, activeArea.bbox),
+    [area, activeArea.bbox]
+  );
+
+  const selectedBeforeGranule = useMemo(
+    () => DISCOVERED_GRANULES.find((g) => g.conceptId === beforeConceptId),
+    [beforeConceptId]
+  );
+  const selectedAfterGranule = useMemo(
+    () => DISCOVERED_GRANULES.find((g) => g.conceptId === afterConceptId),
+    [afterConceptId]
+  );
+
+  const activeThresholdPreset = useMemo(
+    () =>
+      VISUALIZATION_THRESHOLD_PRESETS.find((p) => p.id === visualizationThreshold) ??
+      VISUALIZATION_THRESHOLD_PRESETS[0],
+    [visualizationThreshold]
+  );
+
+  const isChangeLayerActive =
+    overlayLayer === 'change_db' ||
+    overlayLayer === 'change_classes' ||
+    overlayLayer === 'change_classes_2db' ||
+    overlayLayer === 'change_classes_4db';
 
   const filteredGranules = useMemo(() => {
     return DISCOVERED_GRANULES.filter((g) => {
@@ -166,7 +343,9 @@ function AppWorkbench() {
     setSelectedProvince('An Giang');
     setBeforeConceptId('G4404304390-ASF');
     setAfterConceptId('G4410154671-ASF');
-    setOverlayLayer('swipe_before_after');
+    setAutoOrderNotice(false);
+    setOverlayLayer('change_db');
+    setVisualizationThreshold('continuous');
     setOverlayOpacity(0.9);
     setSwipePercent(50);
     setCustomClickMode(false);
@@ -178,10 +357,14 @@ function AppWorkbench() {
     SCIENTIFIC_QA_ITEMS.find((item) => item.id === activeQaId) ?? SCIENTIFIC_QA_ITEMS[0];
 
   const showSection = (sec: RailSectionFilter) =>
-    sectionFilter === 'all' || sectionFilter === sec;
+    mode === 'explore' || sectionFilter === 'all' || sectionFilter === sec;
 
   return (
-    <div className="app-shell" data-lang={lang}>
+    <div
+      className={`app-shell mode-${mode} ${isDraggingSplitter ? 'is-resizing' : ''}`}
+      data-lang={lang}
+      data-mode={mode}
+    >
       <header className="topbar">
         <a className="brand" href="#top" aria-label={t('brand.homeAria')}>
           <span className="brand-mark" aria-hidden="true">
@@ -242,6 +425,8 @@ function AppWorkbench() {
           <div className="view-switch" role="group" aria-label={t('header.viewModeAria')}>
             <button
               type="button"
+              data-testid="mode-btn-explore"
+              aria-pressed={mode === 'explore'}
               className={mode === 'explore' ? 'selected' : ''}
               onClick={() => setMode('explore')}
             >
@@ -249,6 +434,8 @@ function AppWorkbench() {
             </button>
             <button
               type="button"
+              data-testid="mode-btn-research"
+              aria-pressed={mode === 'research'}
               className={mode === 'research' ? 'selected' : ''}
               onClick={() => setMode('research')}
             >
@@ -258,7 +445,11 @@ function AppWorkbench() {
         </div>
       </header>
 
-      <main className="workspace" id="top">
+      <main
+        className="workspace"
+        id="top"
+        style={{ '--rail-width': `${railWidth}px` } as React.CSSProperties}
+      >
         <section className="map-column" aria-label={t('map.workspaceAria')}>
           <div className="map-toolbar">
             <div>
@@ -268,16 +459,30 @@ function AppWorkbench() {
               <h1>{pick(activeArea.label, activeArea.label_vi)}</h1>
               <p>{pick(activeArea.description, activeArea.description_vi)}</p>
             </div>
-            <div className={`map-status map-status-${mapState}`} role="status">
-              <span className="status-dot" />
-              {mapState === 'loading' && t('map.statusLoading')}
-              {mapState === 'ready' && t('map.statusReady')}
-              {mapState === 'boundary-error' && t('map.statusBoundaryError')}
-              {mapState === 'map-error' && t('map.statusMapError')}
+            <div className="map-toolbar-right">
+              {railWidth !== DEFAULT_RAIL_WIDTH && (
+                <button
+                  type="button"
+                  className="reset-width-btn"
+                  onClick={handleResetRailWidth}
+                  title={t('splitter.resetTitle')}
+                  data-testid="reset-layout-btn"
+                >
+                  {t('splitter.resetBtn')}
+                </button>
+              )}
+              <div className={`map-status map-status-${mapState}`} role="status">
+                <span className="status-dot" />
+                {mapState === 'loading' && t('map.statusLoading')}
+                {mapState === 'ready' && t('map.statusReady')}
+                {mapState === 'boundary-error' && t('map.statusBoundaryError')}
+                {mapState === 'map-error' && t('map.statusMapError')}
+              </div>
             </div>
           </div>
 
           <MapStage
+            mode={mode}
             area={area}
             selectedProvince={selectedProvince}
             customBbox={customBbox}
@@ -287,6 +492,7 @@ function AppWorkbench() {
             overlayLayer={overlayLayer}
             overlayOpacity={overlayOpacity}
             swipePercent={swipePercent}
+            visualizationThreshold={visualizationThreshold}
             showSyntheticFixture={showSyntheticFixture}
             onMapStateChange={onMapStateChange}
             onLocationSelect={onLocationSelect}
@@ -296,6 +502,7 @@ function AppWorkbench() {
             onOverlayLayerChange={setOverlayLayer}
             onOverlayOpacityChange={setOverlayOpacity}
             onSwipePercentChange={setSwipePercent}
+            onVisualizationThresholdChange={setVisualizationThreshold}
             onToggleFootprints={() => setShowFootprints((v) => !v)}
             onToggleCustomClickMode={() => setCustomClickMode((v) => !v)}
             onResetSelection={handleResetSelection}
@@ -314,37 +521,85 @@ function AppWorkbench() {
           </div>
         </section>
 
-        <aside className="side-rail" aria-label={t('rail.aria')}>
-          {/* Quick Step Navigation Bar */}
-          <nav className="rail-nav" aria-label={t('rail.navAria')}>
-            {(
-              [
-                ['all', t('rail.tabAll')],
-                ['aoi', t('rail.tabAoi')],
-                ['catalog', t('rail.tabCatalog')],
-                ['compare', t('rail.tabCompare')],
-                ['interpret', t('rail.tabInterpret')],
-                ['provenance', t('rail.tabGates')],
-              ] as const
-            ).map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                className={`rail-nav-btn ${sectionFilter === id ? 'active' : ''}`}
-                onClick={() => setSectionFilter(id)}
-              >
-                {label}
-              </button>
-            ))}
-          </nav>
+        {/* Draggable Vertical Splitter between Map and Sidebar */}
+        <div
+          className={`workspace-splitter ${isDraggingSplitter ? 'dragging' : ''}`}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label={t('splitter.aria')}
+          aria-valuenow={railWidth}
+          aria-valuemin={MIN_RAIL_WIDTH}
+          aria-valuemax={MAX_RAIL_WIDTH}
+          tabIndex={0}
+          title={t('splitter.tooltip')}
+          data-testid="workspace-splitter"
+          onPointerDown={handleSplitterPointerDown}
+          onDoubleClick={handleResetRailWidth}
+          onKeyDown={handleSplitterKeyDown}
+        >
+          <span className="splitter-grip" aria-hidden="true">
+            ⋮
+          </span>
+        </div>
 
-          {/* SECTION 01: AOI SELECTION & 4-TIER EVIDENCE LADDER */}
+        <aside className={`side-rail side-rail-${mode}`} aria-label={t('rail.aria')}>
+          {/* Active Mode Context Banner */}
+          <div className={`mode-context-banner banner-${mode}`} data-testid="mode-context-banner">
+            <div className="mode-banner-top">
+              <span className="mode-badge">
+                {mode === 'explore' ? t('mode.exploreBadge') : t('mode.researchBadge')}
+              </span>
+              <button
+                type="button"
+                className="mode-inline-switch"
+                onClick={() => setMode(mode === 'explore' ? 'research' : 'explore')}
+              >
+                {mode === 'explore'
+                  ? t('mode.switchToResearchBtn')
+                  : t('mode.switchToExploreBtn')}
+              </button>
+            </div>
+            <p className="mode-banner-hint">
+              {mode === 'explore' ? t('mode.exploreHint') : t('mode.researchHint')}
+            </p>
+          </div>
+
+          {/* Quick Step Navigation Bar — Visible in Research & Gates Mode */}
+          {mode === 'research' && (
+            <nav className="rail-nav" aria-label={t('rail.navAria')} data-testid="research-step-nav">
+              {(
+                [
+                  ['all', t('rail.tabAll')],
+                  ['aoi', t('rail.tabAoi')],
+                  ['catalog', t('rail.tabCatalog')],
+                  ['compare', t('rail.tabCompare')],
+                  ['interpret', t('rail.tabInterpret')],
+                  ['provenance', t('rail.tabGates')],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={`rail-nav-btn ${sectionFilter === id ? 'active' : ''}`}
+                  onClick={() => setSectionFilter(id)}
+                >
+                  {label}
+                </button>
+              ))}
+            </nav>
+          )}
+
+          {/* =====================================================================
+              SECTION 1: LOCATION (Visual-first in Explore; Full 4-Tier in Research)
+             ===================================================================== */}
           {showSection('aoi') && (
-            <section className="rail-section area-section">
+            <section className="rail-section area-section" data-testid="section-location">
               <div className="section-heading">
-                <span className="step-index">01</span>
+                <span className="step-index">{mode === 'explore' ? '1' : '01'}</span>
                 <div>
-                  <span className="eyebrow">{t('sec1.eyebrow')}</span>
+                  <span className="eyebrow">
+                    {mode === 'explore' ? t('explore.sec1.eyebrow') : t('sec1.eyebrow')}
+                  </span>
                   <h2>{t('sec1.title')}</h2>
                 </div>
                 <button
@@ -356,6 +611,24 @@ function AppWorkbench() {
                   {t('sec1.resetBtn')}
                 </button>
               </div>
+
+              {mode === 'explore' && (
+                <div
+                  className={`location-availability-pill ${
+                    area === 'angiang-screening'
+                      ? 'loc-ready'
+                      : area === 'dongthap-pilot'
+                        ? 'loc-offswath'
+                        : 'loc-catalog'
+                  }`}
+                >
+                  {area === 'angiang-screening'
+                    ? t('explore.sec1.statusReady')
+                    : area === 'dongthap-pilot'
+                      ? t('explore.sec1.statusOffSwath')
+                      : t('explore.sec1.statusCatalog')}
+                </div>
+              )}
 
               <label className="field-label" htmlFor="area-select">
                 {t('sec1.presetLabel')}
@@ -397,227 +670,161 @@ function AppWorkbench() {
                 ))}
               </select>
 
-              <div className="aoi-metrics-grid">
-                <div className="metric-box">
-                  <span className="metric-label">{t('sec1.bboxLabel')}</span>
-                  <strong>
-                    [{activeArea.bbox[0].toFixed(2)}°E, {activeArea.bbox[1].toFixed(2)}°N,{' '}
-                    {activeArea.bbox[2].toFixed(2)}°E, {activeArea.bbox[3].toFixed(2)}°N]
-                  </strong>
-                </div>
-                <div className="metric-box">
-                  <span className="metric-label">{t('sec1.areaValidLabel')}</span>
-                  <strong>
-                    {activeArea.areaKm2.toLocaleString()} km² ·{' '}
-                    {activeArea.validCoveragePct !== null
-                      ? `${activeArea.validCoveragePct.toFixed(2)}% ${t('sec1.validSuffix')}`
-                      : t('sec1.unverifiedSubset')}
-                  </strong>
-                </div>
-              </div>
-
-              <div className="evidence-ladder" aria-label={t('sec1.ladderAria')}>
-                <span className="field-label">{t('sec1.ladderTitle')}</span>
-                {EVIDENCE_TIERS.map((tier) => {
-                  const isCurrent = activeArea.evidenceTier === tier.id;
-                  const isPassed =
-                    (activeArea.evidenceTier === 'TIER_4_COMPARABLE' && tier.level <= 4) ||
-                    (activeArea.evidenceTier === 'TIER_2_FOOTPRINT' && tier.level <= 2) ||
-                    (activeArea.evidenceTier === 'TIER_1_CATALOG' && tier.level === 1);
-                  return (
-                    <div
-                      key={tier.id}
-                      className={`tier-row ${isCurrent ? 'tier-current' : ''} ${
-                        isPassed ? 'tier-passed' : 'tier-unreached'
-                      }`}
-                    >
-                      <span className="tier-dot">{isPassed ? '✓' : tier.level}</span>
-                      <div>
-                        <strong>{pick(tier.title, tier.title_vi)}</strong>{' '}
-                        <small>({pick(tier.subtitle, tier.subtitle_vi)})</small>
-                        {isCurrent && <p>{pick(tier.description, tier.description_vi)}</p>}
+              {mode === 'explore' ? (
+                <>
+                  <p className="explore-location-desc">
+                    {pick(activeArea.description, activeArea.description_vi)}
+                  </p>
+                  <details className="explore-progressive-details">
+                    <summary>{t('explore.sec1.coordsSummary')}</summary>
+                    <div className="aoi-metrics-grid">
+                      <div className="metric-box">
+                        <span className="metric-label">{t('sec1.bboxLabel')}</span>
+                        <strong>
+                          [{activeArea.bbox[0].toFixed(2)}°E, {activeArea.bbox[1].toFixed(2)}°N,{' '}
+                          {activeArea.bbox[2].toFixed(2)}°E, {activeArea.bbox[3].toFixed(2)}°N]
+                        </strong>
+                      </div>
+                      <div className="metric-box">
+                        <span className="metric-label">{t('sec1.areaValidLabel')}</span>
+                        <strong>
+                          {activeArea.areaKm2.toLocaleString()} km² ·{' '}
+                          {activeArea.validCoveragePct !== null
+                            ? `${activeArea.validCoveragePct.toFixed(2)}% ${t('sec1.validSuffix')}`
+                            : t('sec1.unverifiedSubset')}
+                        </strong>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
+                  </details>
+                </>
+              ) : (
+                <>
+                  <div className="aoi-metrics-grid">
+                    <div className="metric-box">
+                      <span className="metric-label">{t('sec1.bboxLabel')}</span>
+                      <strong>
+                        [{activeArea.bbox[0].toFixed(2)}°E, {activeArea.bbox[1].toFixed(2)}°N,{' '}
+                        {activeArea.bbox[2].toFixed(2)}°E, {activeArea.bbox[3].toFixed(2)}°N]
+                      </strong>
+                    </div>
+                    <div className="metric-box">
+                      <span className="metric-label">{t('sec1.areaValidLabel')}</span>
+                      <strong>
+                        {activeArea.areaKm2.toLocaleString()} km² ·{' '}
+                        {activeArea.validCoveragePct !== null
+                          ? `${activeArea.validCoveragePct.toFixed(2)}% ${t('sec1.validSuffix')}`
+                          : t('sec1.unverifiedSubset')}
+                      </strong>
+                    </div>
+                  </div>
 
-          {/* SECTION 02: NISAR DATA EXPLORER (29 REAL CMR GRANULES) */}
-          {showSection('catalog') && (
-            <section className="rail-section observe-section">
-              <div className="section-heading">
-                <span className="step-index">02</span>
-                <div>
-                  <span className="eyebrow">{t('sec2.eyebrow')}</span>
-                  <h2>
-                    {t('sec2.titlePrefix')} ({filteredGranules.length} / 29{' '}
-                    {t('sec2.titleSuffix')})
-                  </h2>
-                </div>
-              </div>
-
-              <div className="catalog-filters">
-                <div className="filter-row">
-                  <select
-                    aria-label={t('sec2.filterMaturityAria')}
-                    value={collectionFilter}
-                    onChange={(e) =>
-                      setCollectionFilter(
-                        e.target.value as 'ALL' | 'VALIDATED' | 'PROVISIONAL'
-                      )
-                    }
-                  >
-                    <option value="ALL">{t('sec2.filterAllCollections')}</option>
-                    <option value="VALIDATED">{t('sec2.filterValidated')}</option>
-                    <option value="PROVISIONAL">{t('sec2.filterProvisional')}</option>
-                  </select>
-
-                  <select
-                    aria-label={t('sec2.filterTrackAria')}
-                    value={trackFilter}
-                    onChange={(e) =>
-                      setTrackFilter(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))
-                    }
-                  >
-                    <option value="ALL">{t('sec2.filterAllTracks')}</option>
-                    <option value={148}>{t('sec2.filterTrack148')}</option>
-                    <option value={75}>{t('sec2.filterTrackPrefix')} 075</option>
-                    <option value={2}>{t('sec2.filterTrackPrefix')} 002</option>
-                    <option value={155}>{t('sec2.filterTrackPrefix')} 155</option>
-                    <option value={82}>{t('sec2.filterTrackPrefix')} 082</option>
-                    <option value={9}>{t('sec2.filterTrackPrefix')} 009</option>
-                  </select>
-                </div>
-
-                <div className="filter-row">
-                  <input
-                    type="search"
-                    placeholder={t('sec2.searchPlaceholder')}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    aria-label={t('sec2.searchAria')}
-                  />
-                  <label className="checkbox-inline">
-                    <input
-                      type="checkbox"
-                      checked={intersectOnly}
-                      onChange={(e) => setIntersectOnly(e.target.checked)}
-                    />
-                    {t('sec2.intersectsCheckbox')}
-                  </label>
-                </div>
-              </div>
-
-              <div className="granule-list" role="list" aria-label={t('sec2.listAria')}>
-                {filteredGranules.map((g) => {
-                  const isBefore = g.conceptId === beforeConceptId;
-                  const isAfter = g.conceptId === afterConceptId;
-                  const isVerifiedCandidate =
-                    g.conceptId === 'G4404304390-ASF' || g.conceptId === 'G4410154671-ASF';
-                  const intersectsActive = bboxesIntersect(g.footprintBbox, activeArea.bbox);
-
-                  return (
-                    <article
-                      key={g.conceptId}
-                      className={`granule-card ${
-                        isBefore || isAfter ? 'granule-selected' : ''
-                      }`}
-                      role="listitem"
-                    >
-                      <div className="granule-card-top">
-                        <strong>{g.date}</strong>
-                        <span className="granule-time">
-                          {g.startUtc.slice(11, 19)} UTC
-                        </span>
-                        <span
-                          className={`maturity-pill ${
-                            g.maturity === 'VALIDATED' ? 'mat-valid' : 'mat-prov'
+                  <div className="evidence-ladder" aria-label={t('sec1.ladderAria')}>
+                    <span className="field-label">{t('sec1.ladderTitle')}</span>
+                    {EVIDENCE_TIERS.map((tier) => {
+                      const isCurrent = activeArea.evidenceTier === tier.id;
+                      const isPassed =
+                        (activeArea.evidenceTier === 'TIER_4_COMPARABLE' && tier.level <= 4) ||
+                        (activeArea.evidenceTier === 'TIER_2_FOOTPRINT' && tier.level <= 2) ||
+                        (activeArea.evidenceTier === 'TIER_1_CATALOG' && tier.level === 1);
+                      return (
+                        <div
+                          key={tier.id}
+                          className={`tier-row ${isCurrent ? 'tier-current' : ''} ${
+                            isPassed ? 'tier-passed' : 'tier-unreached'
                           }`}
                         >
-                          {g.collection === 'NISAR_L2_GCOV_V1'
-                            ? t('sec2.badgeValidated')
-                            : t('sec2.badgeProvisional')}
-                        </span>
-                      </div>
-
-                      <div className="granule-meta-line">
-                        <span>
-                          <b>{g.conceptId}</b>
-                        </span>
-                        <span>
-                          {t('sec2.metaTrack')} <b>{g.track}</b> / {t('sec2.metaFrame')}{' '}
-                          <b>{g.frame}</b>
-                        </span>
-                        <span>{g.direction}</span>
-                        <span>CRID {g.crid}</span>
-                        <span>
-                          {t('sec2.metaCycle')} {g.cycle}
-                        </span>
-                      </div>
-
-                      <code className="granule-ur">{g.granuleId}</code>
-
-                      <div className="granule-status-row">
-                        <span className="footprint-tag">
-                          {intersectsActive ? t('sec2.intersectsYes') : t('sec2.intersectsNo')}
-                        </span>
-                        {isVerifiedCandidate && (
-                          <span className="verified-subset-tag">
-                            {t('sec2.verifiedSubsetTag')}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="granule-actions">
-                        <button
-                          type="button"
-                          className={`assign-btn ${isBefore ? 'active-before' : ''}`}
-                          onClick={() => setBeforeConceptId(g.conceptId)}
-                        >
-                          {isBefore ? t('sec2.btnBeforeActive') : t('sec2.btnBeforeSet')}
-                        </button>
-                        <button
-                          type="button"
-                          className={`assign-btn ${isAfter ? 'active-after' : ''}`}
-                          onClick={() => setAfterConceptId(g.conceptId)}
-                        >
-                          {isAfter ? t('sec2.btnAfterActive') : t('sec2.btnAfterSet')}
-                        </button>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
+                          <span className="tier-dot">{isPassed ? '✓' : tier.level}</span>
+                          <div>
+                            <strong>{pick(tier.title, tier.title_vi)}</strong>{' '}
+                            <small>({pick(tier.subtitle, tier.subtitle_vi)})</small>
+                            {isCurrent && <p>{pick(tier.description, tier.description_vi)}</p>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </section>
           )}
 
-          {/* SECTION 03: BEFORE–AFTER COMPARISON & CHANGE VISUALIZATION */}
+          {/* =====================================================================
+              SECTION 2 (IN EXPLORE) / SECTION 03 (IN RESEARCH):
+              TIME COMPARISON & WHAT CHANGED?
+             ===================================================================== */}
           {showSection('compare') && (
-            <section className="rail-section compare-section">
+            <section className="rail-section compare-section" data-testid="section-compare">
               <div className="section-heading">
-                <span className="step-index">03</span>
+                <span className="step-index">{mode === 'explore' ? '2' : '03'}</span>
                 <div>
-                  <span className="eyebrow">{t('sec3.eyebrow')}</span>
+                  <span className="eyebrow">
+                    {mode === 'explore' ? t('explore.sec2.eyebrow') : t('sec3.eyebrow')}
+                  </span>
                   <h2>{t('sec3.title')}</h2>
                 </div>
                 <span
                   className={`soon-tag ${
-                    compatibility.allPassed ? 'tag-enabled' : 'tag-blocked'
+                    compatibility.allPassed
+                      ? 'tag-enabled'
+                      : compatibility.compatibilityLevel === 'LEVEL_2_GEOMETRIC_CANDIDATE'
+                        ? 'tag-candidate'
+                        : 'tag-blocked'
                   }`}
                 >
-                  {compatibility.allPassed ? t('sec3.tagPassed') : t('sec3.tagBlocked')}
+                  {compatibility.allPassed
+                    ? t('sec3.tagPassed')
+                    : compatibility.compatibilityLevel === 'LEVEL_2_GEOMETRIC_CANDIDATE'
+                      ? 'Level 2'
+                      : t('sec3.tagBlocked')}
                 </span>
               </div>
+
+              {/* Time Interval & Compatibility Level Banner */}
+              <div className="time-summary-banner" data-testid="time-summary-banner">
+                <div className="time-dates-line">
+                  <strong>{selectedBeforeGranule?.date ?? beforeConceptId}</strong>
+                  <span className="time-arrow">→</span>
+                  <strong>{selectedAfterGranule?.date ?? afterConceptId}</strong>
+                  {compatibility.intervalDays !== null && (
+                    <span className="interval-pill">
+                      {compatibility.intervalDays} {t('explore.sec2.intervalBadge')}
+                    </span>
+                  )}
+                </div>
+                <div
+                  className={`compat-level-badge level-${compatibility.compatibilityLevel.toLowerCase()}`}
+                  data-testid="compat-level-badge"
+                >
+                  {compatibility.compatibilityLevel === 'LEVEL_3_RASTER_VERIFIED'
+                    ? t('explore.sec2.comparableBadge')
+                    : compatibility.compatibilityLevel === 'LEVEL_2_GEOMETRIC_CANDIDATE'
+                      ? t('explore.sec2.geometricBadge')
+                      : t('explore.sec2.incompatibleBadge')}
+                </div>
+              </div>
+
+              {autoOrderNotice && (
+                <div className="auto-order-notice" role="status" data-testid="auto-order-notice">
+                  {t('explore.sec2.autoOrderedNotice')}
+                </div>
+              )}
 
               <div className="date-pair">
                 <label className="date-card">
                   <span className="date-label">{t('sec3.beforeLabel')}</span>
                   <select
                     aria-label={t('sec3.beforeAria')}
+                    data-testid="select-before-granule"
                     value={beforeConceptId}
-                    onChange={(e) => setBeforeConceptId(e.target.value)}
+                    onChange={(e) => {
+                      const nextBefore = e.target.value;
+                      if (mode === 'explore') {
+                        handleSelectPairChronological(nextBefore, afterConceptId);
+                      } else {
+                        setBeforeConceptId(nextBefore);
+                        setAutoOrderNotice(false);
+                      }
+                    }}
                   >
                     {DISCOVERED_GRANULES.map((g) => (
                       <option key={g.conceptId} value={g.conceptId}>
@@ -638,8 +845,17 @@ function AppWorkbench() {
                   <span className="date-label">{t('sec3.afterLabel')}</span>
                   <select
                     aria-label={t('sec3.afterAria')}
+                    data-testid="select-after-granule"
                     value={afterConceptId}
-                    onChange={(e) => setAfterConceptId(e.target.value)}
+                    onChange={(e) => {
+                      const nextAfter = e.target.value;
+                      if (mode === 'explore') {
+                        handleSelectPairChronological(beforeConceptId, nextAfter);
+                      } else {
+                        setAfterConceptId(nextAfter);
+                        setAutoOrderNotice(false);
+                      }
+                    }}
                   >
                     {DISCOVERED_GRANULES.map((g) => (
                       <option key={g.conceptId} value={g.conceptId}>
@@ -655,121 +871,349 @@ function AppWorkbench() {
                 </label>
               </div>
 
+              {compatibility.isReversedOrder && (
+                <button
+                  type="button"
+                  className="swap-order-btn"
+                  data-testid="swap-order-btn"
+                  onClick={() => handleSelectPairChronological(beforeConceptId, afterConceptId)}
+                >
+                  ⇄ {t('explore.sec2.swapOrderBtn')}
+                </button>
+              )}
+
+              {/* Automatic Compatible-Pair Discovery Drawer */}
+              <details
+                className="compatible-pairs-drawer"
+                open={!compatibility.allPassed}
+                data-testid="compatible-pairs-drawer"
+              >
+                <summary>
+                  <span>{t('explore.sec2.pairFinderTitle')}</span>
+                  <span className="pair-count-pill">{compatiblePairs.length} pairs</span>
+                </summary>
+                <p className="pair-finder-sub">{t('explore.sec2.pairFinderSubtitle')}</p>
+                <div className="compatible-pair-list">
+                  {compatiblePairs.slice(0, mode === 'explore' ? 5 : 12).map((pair) => {
+                    const isCurrentPair =
+                      pair.earlier.conceptId === beforeConceptId &&
+                      pair.later.conceptId === afterConceptId;
+                    return (
+                      <div
+                        key={pair.id}
+                        className={`compat-pair-item ${isCurrentPair ? 'active-pair' : ''} ${
+                          pair.hasLocalVerifiedRasterInAnGiang ? 'verified-pair-item' : ''
+                        }`}
+                      >
+                        <div className="compat-pair-meta">
+                          <div className="compat-pair-dates">
+                            <strong>
+                              {pair.earlier.date} → {pair.later.date}
+                            </strong>{' '}
+                            <span className="compat-days">({pair.intervalDays}d)</span>
+                            <span
+                              className={`compat-tier-tag ${
+                                pair.hasLocalVerifiedRasterInAnGiang ? 'tier-l3' : 'tier-l2'
+                              }`}
+                            >
+                              {pick(pair.badge, pair.badge_vi)}
+                            </span>
+                          </div>
+                          <small>
+                            Track {pair.track} / Frame {pair.frame} · {pair.direction} ·{' '}
+                            {pair.earlier.crid === pair.later.crid
+                              ? `CRID ${pair.earlier.crid}`
+                              : `CRID ${pair.earlier.crid}→${pair.later.crid}`}
+                          </small>
+                        </div>
+                        <button
+                          type="button"
+                          className={`select-pair-btn ${isCurrentPair ? 'selected' : ''}`}
+                          data-testid={`load-pair-${pair.id}`}
+                          onClick={() => {
+                            setBeforeConceptId(pair.earlier.conceptId);
+                            setAfterConceptId(pair.later.conceptId);
+                            setAutoOrderNotice(false);
+                            if (pair.hasLocalVerifiedRasterInAnGiang && area !== 'angiang-screening') {
+                              handleAreaChange('angiang-screening');
+                            }
+                          }}
+                        >
+                          {isCurrentPair
+                            ? t('explore.sec2.activePairTag')
+                            : t('explore.sec2.selectPairBtn')}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </details>
+
               {compatibility.allPassed ? (
                 <>
-                  <div className="active-comparison-controls">
-                    <div className="slider-label">
-                      <span>{t('sec3.sliderBefore')}</span>
-                      <span>
-                        {t('sec3.sliderSplit')} {swipePercent}%
-                      </span>
-                      <span>{t('sec3.sliderAfter')}</span>
+                  {/* ===========================================================
+                      SECTION 3 IN EXPLORE MODE: WHAT CHANGED? (VISUAL-FIRST)
+                     =========================================================== */}
+                  <div className="what-changed-hero" data-testid="what-changed-hero">
+                    <div className="what-changed-header">
+                      <span className="step-index">{mode === 'explore' ? '3' : '★'}</span>
+                      <div>
+                        <span className="eyebrow">{t('explore.sec3.eyebrow')}</span>
+                        <h3>{t('explore.sec3.title')}</h3>
+                      </div>
                     </div>
-                    <input
-                      aria-label={t('sec3.sliderAria')}
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={swipePercent}
-                      onChange={(e) => {
-                        setOverlayLayer('swipe_before_after');
-                        setSwipePercent(Number(e.target.value));
-                      }}
-                    />
 
+                    <p className="what-changed-lead">{t('explore.sec3.leadText')}</p>
+
+                    {/* Primary 4-Mode Layer Switcher (BEFORE | AFTER | CHANGE | SWIPE) */}
                     <div
-                      className="layer-buttons"
+                      className="primary-view-cards"
                       role="group"
                       aria-label={t('sec3.layerGroupAria')}
                     >
-                      {(
-                        [
-                          ['swipe_before_after', t('sec3.layerSwipe')],
-                          ['before_db', t('sec3.layerBefore')],
-                          ['after_db', t('sec3.layerAfter')],
-                          ['change_db', t('sec3.layerChangeDb')],
-                          ['change_classes', t('sec3.layerClasses')],
-                          ['mask_common_valid', t('sec3.layerMask')],
-                        ] as const
-                      ).map(([id, label]) => (
-                        <button
-                          key={id}
-                          type="button"
-                          className={overlayLayer === id ? 'selected' : ''}
-                          onClick={() => setOverlayLayer(id)}
+                      <button
+                        type="button"
+                        className={`view-card-btn ${overlayLayer === 'before_db' ? 'selected' : ''}`}
+                        onClick={() => setOverlayLayer('before_db')}
+                      >
+                        <strong>{t('primaryLayer.before')}</strong>
+                        <small>-8.74 dB mean</small>
+                      </button>
+                      <button
+                        type="button"
+                        className={`view-card-btn ${overlayLayer === 'after_db' ? 'selected' : ''}`}
+                        onClick={() => setOverlayLayer('after_db')}
+                      >
+                        <strong>{t('primaryLayer.after')}</strong>
+                        <small>-8.33 dB mean</small>
+                      </button>
+                      <button
+                        type="button"
+                        className={`view-card-btn view-card-change ${
+                          isChangeLayerActive ? 'selected' : ''
+                        }`}
+                        onClick={() => setOverlayLayer(activeThresholdPreset.overlayLayer)}
+                      >
+                        <strong>{t('primaryLayer.change')}</strong>
+                        <small>+0.42 dB mean shift</small>
+                      </button>
+                      <button
+                        type="button"
+                        className={`view-card-btn ${
+                          overlayLayer === 'swipe_before_after' ? 'selected' : ''
+                        }`}
+                        onClick={() => setOverlayLayer('swipe_before_after')}
+                      >
+                        <strong>{t('primaryLayer.swipe')}</strong>
+                        <small>{swipePercent}% split</small>
+                      </button>
+                    </div>
+
+                    {/* Threshold & Opacity Controls */}
+                    <div className="active-comparison-controls">
+                      <div className="threshold-control-block">
+                        <span className="field-label">{t('primaryLayer.thresholdLabel')}</span>
+                        <div className="threshold-chip-row">
+                          {VISUALIZATION_THRESHOLD_PRESETS.map((preset) => (
+                            <button
+                              key={preset.id}
+                              type="button"
+                              className={`thresh-pill-btn ${
+                                visualizationThreshold === preset.id &&
+                                overlayLayer === preset.overlayLayer
+                                  ? 'selected'
+                                  : ''
+                              }`}
+                              onClick={() => {
+                                setVisualizationThreshold(preset.id);
+                                setOverlayLayer(preset.overlayLayer);
+                              }}
+                            >
+                              {pick(preset.shortLabel, preset.shortLabel_vi)}
+                            </button>
+                          ))}
+                        </div>
+                        <small className="threshold-note">
+                          {pick(activeThresholdPreset.note, activeThresholdPreset.note_vi)}
+                        </small>
+                      </div>
+
+                      {overlayLayer === 'swipe_before_after' && (
+                        <>
+                          <div className="slider-label">
+                            <span>{t('sec3.sliderBefore')}</span>
+                            <span>
+                              {t('sec3.sliderSplit')} {swipePercent}%
+                            </span>
+                            <span>{t('sec3.sliderAfter')}</span>
+                          </div>
+                          <input
+                            aria-label={t('sec3.sliderAria')}
+                            type="range"
+                            min={0}
+                            max={100}
+                            value={swipePercent}
+                            onChange={(e) => {
+                              setOverlayLayer('swipe_before_after');
+                              setSwipePercent(Number(e.target.value));
+                            }}
+                          />
+                        </>
+                      )}
+
+                      {mode === 'research' && (
+                        <div
+                          className="layer-buttons"
+                          role="group"
+                          aria-label={t('sec3.layerGroupAria')}
                         >
-                          {label}
-                        </button>
-                      ))}
+                          {(
+                            [
+                              ['swipe_before_after', t('sec3.layerSwipe')],
+                              ['before_db', t('sec3.layerBefore')],
+                              ['after_db', t('sec3.layerAfter')],
+                              ['change_db', t('sec3.layerChangeDb')],
+                              ['change_classes', t('sec3.layerClasses')],
+                              ['mask_common_valid', t('sec3.layerMask')],
+                            ] as const
+                          ).map(([id, label]) => (
+                            <button
+                              key={id}
+                              type="button"
+                              className={overlayLayer === id ? 'selected' : ''}
+                              onClick={() => setOverlayLayer(id)}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Visual Change Indicator Cards (Decrease / Stable / Increase) */}
+                    <div className="visual-change-cards">
+                      <div className="visual-change-card card-dec">
+                        <div className="vc-top">
+                          <span className="vc-swatch swatch-blue" />
+                          <strong>{t('explore.sec3.cardDecTitle')}</strong>
+                          <span className="vc-metric">
+                            {activeThresholdPreset.decreaseAreaKm2} km² (
+                            {activeThresholdPreset.decreasePct}%)
+                          </span>
+                        </div>
+                        <p>{t('explore.sec3.cardDecDesc')}</p>
+                      </div>
+
+                      <div className="visual-change-card card-stable">
+                        <div className="vc-top">
+                          <span className="vc-swatch swatch-neutral" />
+                          <strong>{t('explore.sec3.cardStableTitle')}</strong>
+                          <span className="vc-metric">
+                            {activeThresholdPreset.stableAreaKm2} km² (
+                            {activeThresholdPreset.stablePct}%)
+                          </span>
+                        </div>
+                        <p>{t('explore.sec3.cardStableDesc')}</p>
+                      </div>
+
+                      <div className="visual-change-card card-inc">
+                        <div className="vc-top">
+                          <span className="vc-swatch swatch-red" />
+                          <strong>{t('explore.sec3.cardIncTitle')}</strong>
+                          <span className="vc-metric">
+                            {activeThresholdPreset.increaseAreaKm2} km² (
+                            {activeThresholdPreset.increasePct}%)
+                          </span>
+                        </div>
+                        <p>{t('explore.sec3.cardIncDesc')}</p>
+                      </div>
+                    </div>
+
+                    <div className="scientific-caution-box">
+                      <strong>{t('explore.sec3.cautionBoxTitle')}</strong>
+                      <p>{t('explore.sec3.cautionBoxBody')}</p>
                     </div>
                   </div>
 
-                  {/* Quantitative Statistics Card for Verified An Giang Pair */}
-                  <div className="stats-summary-card" aria-label={t('sec3.statsAria')}>
-                    <div className="stats-header">
-                      <strong>{t('sec3.statsTitle')}</strong>
-                      <span>{t('sec3.statsSubtitle')}</span>
-                    </div>
+                  {/* Quantitative Statistics Card — Open in Research, Progressive Disclosure in Explore */}
+                  <details
+                    className="explore-more-accordion"
+                    open={mode === 'research'}
+                    data-testid="stats-accordion"
+                  >
+                    <summary>{t('explore.sec4.accStats')}</summary>
+                    <div className="stats-summary-card" aria-label={t('sec3.statsAria')}>
+                      <div className="stats-header">
+                        <strong>{t('sec3.statsTitle')}</strong>
+                        <span>{t('sec3.statsSubtitle')}</span>
+                      </div>
 
-                    <div className="stats-grid-3">
-                      <div className="stat-cell">
-                        <small>{t('sec3.statMeanDelta')}</small>
-                        <strong>+{VERIFIED_ANGIANG_PAIR_STATS.deltaDb.mean.toFixed(3)} dB</strong>
-                        <span>
-                          {t('sec3.statMedianPrefix')} +
-                          {VERIFIED_ANGIANG_PAIR_STATS.deltaDb.median.toFixed(2)} dB
-                        </span>
+                      <div className="stats-grid-3">
+                        <div className="stat-cell">
+                          <small>{t('sec3.statMeanDelta')}</small>
+                          <strong>+{VERIFIED_ANGIANG_PAIR_STATS.deltaDb.mean.toFixed(3)} dB</strong>
+                          <span>
+                            {t('sec3.statMedianPrefix')} +
+                            {VERIFIED_ANGIANG_PAIR_STATS.deltaDb.median.toFixed(2)} dB
+                          </span>
+                        </div>
+                        <div className="stat-cell">
+                          <small>{t('sec3.statPctRange')}</small>
+                          <strong>
+                            {VERIFIED_ANGIANG_PAIR_STATS.deltaDb.p05.toFixed(2)} {t('sec3.statTo')} +
+                            {VERIFIED_ANGIANG_PAIR_STATS.deltaDb.p95.toFixed(2)} dB
+                          </strong>
+                          <span>
+                            {t('sec3.statStdPrefix')}{' '}
+                            {VERIFIED_ANGIANG_PAIR_STATS.deltaDb.std.toFixed(2)} dB
+                          </span>
+                        </div>
+                        <div className="stat-cell">
+                          <small>{t('sec3.statExcluded')}</small>
+                          <strong>1,130 px (0.09%)</strong>
+                          <span>1,084 Oct 22 / 1,090 Nov 03</span>
+                        </div>
                       </div>
-                      <div className="stat-cell">
-                        <small>{t('sec3.statPctRange')}</small>
-                        <strong>
-                          {VERIFIED_ANGIANG_PAIR_STATS.deltaDb.p05.toFixed(2)} {t('sec3.statTo')} +
-                          {VERIFIED_ANGIANG_PAIR_STATS.deltaDb.p95.toFixed(2)} dB
-                        </strong>
-                        <span>
-                          {t('sec3.statStdPrefix')}{' '}
-                          {VERIFIED_ANGIANG_PAIR_STATS.deltaDb.std.toFixed(2)} dB
-                        </span>
-                      </div>
-                      <div className="stat-cell">
-                        <small>{t('sec3.statExcluded')}</small>
-                        <strong>1,130 px (0.09%)</strong>
-                        <span>1,084 Oct 22 / 1,090 Nov 03</span>
-                      </div>
-                    </div>
 
-                    <div className="class-breakdown">
-                      <div className="class-row dec">
-                        <span>{t('sec3.classDec')}</span>
-                        <strong>
-                          {VERIFIED_ANGIANG_PAIR_STATS.areasKm2.decreaseArea} km² (
-                          {VERIFIED_ANGIANG_PAIR_STATS.classes.decreasePixels.toLocaleString()} px ·{' '}
-                          {VERIFIED_ANGIANG_PAIR_STATS.classes.decreasePct}%)
-                        </strong>
-                      </div>
-                      <div className="class-row neutral">
-                        <span>{t('sec3.classNeutral')}</span>
-                        <strong>
-                          {VERIFIED_ANGIANG_PAIR_STATS.areasKm2.noSignificantChangeArea} km² (
-                          {VERIFIED_ANGIANG_PAIR_STATS.classes.noSignificantChangePixels.toLocaleString()}{' '}
-                          px · {VERIFIED_ANGIANG_PAIR_STATS.classes.noSignificantChangePct}%)
-                        </strong>
-                      </div>
-                      <div className="class-row inc">
-                        <span>{t('sec3.classInc')}</span>
-                        <strong>
-                          {VERIFIED_ANGIANG_PAIR_STATS.areasKm2.increaseArea} km² (
-                          {VERIFIED_ANGIANG_PAIR_STATS.classes.increasePixels.toLocaleString()} px ·{' '}
-                          {VERIFIED_ANGIANG_PAIR_STATS.classes.increasePct}%)
-                        </strong>
+                      <div className="class-breakdown">
+                        <div className="class-row dec">
+                          <span>{t('sec3.classDec')}</span>
+                          <strong>
+                            {VERIFIED_ANGIANG_PAIR_STATS.areasKm2.decreaseArea} km² (
+                            {VERIFIED_ANGIANG_PAIR_STATS.classes.decreasePixels.toLocaleString()} px ·{' '}
+                            {VERIFIED_ANGIANG_PAIR_STATS.classes.decreasePct}%)
+                          </strong>
+                        </div>
+                        <div className="class-row neutral">
+                          <span>{t('sec3.classNeutral')}</span>
+                          <strong>
+                            {VERIFIED_ANGIANG_PAIR_STATS.areasKm2.noSignificantChangeArea} km² (
+                            {VERIFIED_ANGIANG_PAIR_STATS.classes.noSignificantChangePixels.toLocaleString()}{' '}
+                            px · {VERIFIED_ANGIANG_PAIR_STATS.classes.noSignificantChangePct}%)
+                          </strong>
+                        </div>
+                        <div className="class-row inc">
+                          <span>{t('sec3.classInc')}</span>
+                          <strong>
+                            {VERIFIED_ANGIANG_PAIR_STATS.areasKm2.increaseArea} km² (
+                            {VERIFIED_ANGIANG_PAIR_STATS.classes.increasePixels.toLocaleString()} px ·{' '}
+                            {VERIFIED_ANGIANG_PAIR_STATS.classes.increasePct}%)
+                          </strong>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </details>
                 </>
               ) : (
-                <div className="empty-state" role="status">
+                <div className="empty-state" role="status" data-testid="comparison-blocked-state">
                   <strong>{t('sec3.blockedTitle')}</strong>
-                  <p>{pick(compatibility.summaryReason, compatibility.summaryReason_vi)}</p>
+                  <p className="plain-blocked-explanation">
+                    {pick(compatibility.plainExplanation, compatibility.plainExplanation_vi)}
+                  </p>
+                  <details className="why-blocked-details" open={mode === 'research'}>
+                    <summary>{t('explore.sec2.whyBlockedBtn')}</summary>
+                    <p>{pick(compatibility.summaryReason, compatibility.summaryReason_vi)}</p>
+                  </details>
                   <div className="blocked-actions">
                     <button
                       type="button"
@@ -792,107 +1236,269 @@ function AppWorkbench() {
             </section>
           )}
 
-          {/* SECTION 04: AI-ASSISTED / EVIDENCE-BASED SCIENTIFIC INTERPRETATION */}
-          {showSection('interpret') && (
-            <section className="rail-section understand-section">
-              <div className="section-heading">
-                <span className="step-index">04</span>
-                <div>
-                  <span className="eyebrow">{t('sec4.eyebrow')}</span>
-                  <h2>{t('sec4.title')}</h2>
-                </div>
-              </div>
-
-              <div className="hierarchy-cards">
-                <div className="hierarchy-card level-1">
-                  <span className="level-tag">{t('sec4.level1Tag')}</span>
-                  {compatibility.allPassed ? (
-                    <p>{t('sec4.level1VerifiedBody')}</p>
-                  ) : (
-                    <p>
-                      {t('sec4.level1PendingPrefix')}{' '}
-                      {pick(compatibility.summaryReason, compatibility.summaryReason_vi)}
-                    </p>
-                  )}
-                </div>
-
-                <div className="hierarchy-card level-2">
-                  <span className="level-tag">{t('sec4.level2Tag')}</span>
-                  <ul>
-                    <li>
-                      <strong>{t('sec4.level2Item1Title')}</strong> {t('sec4.level2Item1Body')}
-                    </li>
-                    <li>
-                      <strong>{t('sec4.level2Item2Title')}</strong> {t('sec4.level2Item2Body')}
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="hierarchy-card level-3">
-                  <span className="level-tag">{t('sec4.level3Tag')}</span>
-                  <p>
-                    <strong>{t('sec4.level3SupportedTitle')}</strong>{' '}
-                    {t('sec4.level3SupportedBody')}
-                    <br />
-                    <strong>{t('sec4.level3NotSupportedTitle')}</strong>{' '}
-                    {t('sec4.level3NotSupportedBody')}
-                  </p>
-                </div>
-              </div>
-
-              <div className="qa-assistant" aria-label={t('sec4.qaAria')}>
-                <span className="field-label">{t('sec4.qaTitle')}</span>
-                <div className="qa-pills">
-                  {SCIENTIFIC_QA_ITEMS.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      className={`qa-pill ${activeQaId === item.id ? 'active' : ''}`}
-                      onClick={() => setActiveQaId(item.id)}
+          {/* =====================================================================
+              SECTION 02: NISAR DATA EXPLORER (29 REAL CMR GRANULES)
+              Open in Research Mode; Progressive Disclosure in Explore Mode
+             ===================================================================== */}
+          {showSection('catalog') && (
+            <details
+              className="rail-accordion-section"
+              open={mode === 'research' || sectionFilter === 'catalog'}
+              data-testid="catalog-accordion"
+            >
+              <summary className="rail-accordion-summary">
+                <span className="step-index">{mode === 'explore' ? '4A' : '02'}</span>
+                <span>
+                  {t('sec2.titlePrefix')} ({filteredGranules.length} / 29 {t('sec2.titleSuffix')})
+                </span>
+              </summary>
+              <section className="rail-section observe-section">
+                <div className="catalog-filters">
+                  <div className="filter-row">
+                    <select
+                      aria-label={t('sec2.filterMaturityAria')}
+                      value={collectionFilter}
+                      onChange={(e) =>
+                        setCollectionFilter(
+                          e.target.value as 'ALL' | 'VALIDATED' | 'PROVISIONAL'
+                        )
+                      }
                     >
-                      {pick(item.shortTag, item.shortTag_vi)}
-                    </button>
-                  ))}
-                </div>
-                <div className="qa-answer-box">
-                  <strong>Q: {pick(activeQa.question, activeQa.question_vi)}</strong>
-                  <p>{pick(activeQa.answer, activeQa.answer_vi)}</p>
-                  <small>
-                    {t('sec4.qaSourcePrefix')}{' '}
-                    {pick(activeQa.evidenceCitation, activeQa.evidenceCitation_vi)}
-                  </small>
-                </div>
-              </div>
+                      <option value="ALL">{t('sec2.filterAllCollections')}</option>
+                      <option value="VALIDATED">{t('sec2.filterValidated')}</option>
+                      <option value="PROVISIONAL">{t('sec2.filterProvisional')}</option>
+                    </select>
 
-              {location && (
-                <div className="location-readout" aria-live="polite">
-                  <span className="eyebrow">{t('sec4.coordEyebrow')}</span>
-                  <strong>
-                    {location.latitude.toFixed(5)}°N, {location.longitude.toFixed(5)}°E
-                  </strong>
-                  <small>
-                    {bboxesIntersect(
-                      [
-                        location.longitude,
-                        location.latitude,
-                        location.longitude,
-                        location.latitude,
-                      ],
-                      VERIFIED_ANGIANG_PAIR_STATS.bboxWgs84
-                    )
-                      ? t('sec4.coordInside')
-                      : t('sec4.coordOutside')}
-                  </small>
+                    <select
+                      aria-label={t('sec2.filterTrackAria')}
+                      value={trackFilter}
+                      onChange={(e) =>
+                        setTrackFilter(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))
+                      }
+                    >
+                      <option value="ALL">{t('sec2.filterAllTracks')}</option>
+                      <option value={148}>{t('sec2.filterTrack148')}</option>
+                      <option value={47}>{t('sec2.filterTrackPrefix')} 047</option>
+                      <option value={83}>{t('sec2.filterTrackPrefix')} 083</option>
+                      <option value={155}>{t('sec2.filterTrackPrefix')} 155</option>
+                    </select>
+                  </div>
+
+                  <div className="filter-row">
+                    <input
+                      type="search"
+                      placeholder={t('sec2.searchPlaceholder')}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      aria-label={t('sec2.searchAria')}
+                    />
+                    <label className="checkbox-inline">
+                      <input
+                        type="checkbox"
+                        checked={intersectOnly}
+                        onChange={(e) => setIntersectOnly(e.target.checked)}
+                      />
+                      {t('sec2.intersectsCheckbox')}
+                    </label>
+                  </div>
                 </div>
-              )}
-            </section>
+
+                <div className="granule-list" role="list" aria-label={t('sec2.listAria')}>
+                  {filteredGranules.map((g) => {
+                    const isBefore = g.conceptId === beforeConceptId;
+                    const isAfter = g.conceptId === afterConceptId;
+                    const isVerifiedCandidate =
+                      g.conceptId === 'G4404304390-ASF' || g.conceptId === 'G4410154671-ASF';
+                    const intersectsActive = bboxesIntersect(g.footprintBbox, activeArea.bbox);
+
+                    return (
+                      <article
+                        key={g.conceptId}
+                        className={`granule-card ${
+                          isBefore || isAfter ? 'granule-selected' : ''
+                        }`}
+                        role="listitem"
+                      >
+                        <div className="granule-card-top">
+                          <strong>{g.date}</strong>
+                          <span className="granule-time">
+                            {g.startUtc.slice(11, 19)} UTC
+                          </span>
+                          <span
+                            className={`maturity-pill ${
+                              g.maturity === 'VALIDATED' ? 'mat-valid' : 'mat-prov'
+                            }`}
+                          >
+                            {g.collection === 'NISAR_L2_GCOV_V1'
+                              ? t('sec2.badgeValidated')
+                              : t('sec2.badgeProvisional')}
+                          </span>
+                        </div>
+
+                        <div className="granule-meta-line">
+                          <span>
+                            <b>{g.conceptId}</b>
+                          </span>
+                          <span>
+                            {t('sec2.metaTrack')} <b>{g.track}</b> / {t('sec2.metaFrame')}{' '}
+                            <b>{g.frame}</b>
+                          </span>
+                          <span>{g.direction}</span>
+                          <span>CRID {g.crid}</span>
+                          <span>
+                            {t('sec2.metaCycle')} {g.cycle}
+                          </span>
+                        </div>
+
+                        <code className="granule-ur">{g.granuleId}</code>
+
+                        <div className="granule-status-row">
+                          <span className="footprint-tag">
+                            {intersectsActive ? t('sec2.intersectsYes') : t('sec2.intersectsNo')}
+                          </span>
+                          {isVerifiedCandidate && (
+                            <span className="verified-subset-tag">
+                              {t('sec2.verifiedSubsetTag')}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="granule-actions">
+                          <button
+                            type="button"
+                            className={`assign-btn ${isBefore ? 'active-before' : ''}`}
+                            onClick={() => setBeforeConceptId(g.conceptId)}
+                          >
+                            {isBefore ? t('sec2.btnBeforeActive') : t('sec2.btnBeforeSet')}
+                          </button>
+                          <button
+                            type="button"
+                            className={`assign-btn ${isAfter ? 'active-after' : ''}`}
+                            onClick={() => setAfterConceptId(g.conceptId)}
+                          >
+                            {isAfter ? t('sec2.btnAfterActive') : t('sec2.btnAfterSet')}
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            </details>
           )}
 
-          {/* SECTION 05: 10 COMPATIBILITY GATES, BYTE BUDGET & PROVENANCE */}
+          {/* =====================================================================
+              SECTION 04: EVIDENCE-BASED SCIENTIFIC INTERPRETATION & Q&A
+              Open in Research Mode; Progressive Disclosure in Explore Mode
+             ===================================================================== */}
+          {showSection('interpret') && (
+            <details
+              className="rail-accordion-section"
+              open={mode === 'research' || sectionFilter === 'interpret'}
+              data-testid="interpret-accordion"
+            >
+              <summary className="rail-accordion-summary">
+                <span className="step-index">{mode === 'explore' ? '4B' : '04'}</span>
+                <span>{t('sec4.title')}</span>
+              </summary>
+              <section className="rail-section understand-section">
+                <div className="hierarchy-cards">
+                  <div className="hierarchy-card level-1">
+                    <span className="level-tag">{t('sec4.level1Tag')}</span>
+                    {compatibility.allPassed ? (
+                      <p>{t('sec4.level1VerifiedBody')}</p>
+                    ) : (
+                      <p>
+                        {t('sec4.level1PendingPrefix')}{' '}
+                        {pick(compatibility.summaryReason, compatibility.summaryReason_vi)}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="hierarchy-card level-2">
+                    <span className="level-tag">{t('sec4.level2Tag')}</span>
+                    <ul>
+                      <li>
+                        <strong>{t('sec4.level2Item1Title')}</strong> {t('sec4.level2Item1Body')}
+                      </li>
+                      <li>
+                        <strong>{t('sec4.level2Item2Title')}</strong> {t('sec4.level2Item2Body')}
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="hierarchy-card level-3">
+                    <span className="level-tag">{t('sec4.level3Tag')}</span>
+                    <p>
+                      <strong>{t('sec4.level3SupportedTitle')}</strong>{' '}
+                      {t('sec4.level3SupportedBody')}
+                      <br />
+                      <strong>{t('sec4.level3NotSupportedTitle')}</strong>{' '}
+                      {t('sec4.level3NotSupportedBody')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="qa-assistant" aria-label={t('sec4.qaAria')}>
+                  <span className="field-label">{t('sec4.qaTitle')}</span>
+                  <div className="qa-pills">
+                    {SCIENTIFIC_QA_ITEMS.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className={`qa-pill ${activeQaId === item.id ? 'active' : ''}`}
+                        onClick={() => setActiveQaId(item.id)}
+                      >
+                        {pick(item.shortTag, item.shortTag_vi)}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="qa-answer-box">
+                    <strong>Q: {pick(activeQa.question, activeQa.question_vi)}</strong>
+                    <p>{pick(activeQa.answer, activeQa.answer_vi)}</p>
+                    <small>
+                      {t('sec4.qaSourcePrefix')}{' '}
+                      {pick(activeQa.evidenceCitation, activeQa.evidenceCitation_vi)}
+                    </small>
+                  </div>
+                </div>
+
+                {location && (
+                  <div className="location-readout" aria-live="polite">
+                    <span className="eyebrow">{t('sec4.coordEyebrow')}</span>
+                    <strong>
+                      {location.latitude.toFixed(5)}°N, {location.longitude.toFixed(5)}°E
+                    </strong>
+                    <small>
+                      {bboxesIntersect(
+                        [
+                          location.longitude,
+                          location.latitude,
+                          location.longitude,
+                          location.latitude,
+                        ],
+                        VERIFIED_ANGIANG_PAIR_STATS.bboxWgs84
+                      )
+                        ? t('sec4.coordInside')
+                        : t('sec4.coordOutside')}
+                    </small>
+                  </div>
+                )}
+              </section>
+            </details>
+          )}
+
+          {/* =====================================================================
+              SECTION 05: 10 COMPATIBILITY GATES, CRID POLICY & PROVENANCE
+              Collapsed by default in Explore Mode; Open by default in Research Mode
+             ===================================================================== */}
           {showSection('provenance') && (
             <details
-              className={`provenance ${mode === 'research' || sectionFilter === 'provenance' ? 'provenance-open' : ''}`}
-              open={mode === 'research' || sectionFilter === 'provenance' || sectionFilter === 'all'}
+              className={`provenance ${
+                mode === 'research' || sectionFilter === 'provenance' ? 'provenance-open' : ''
+              }`}
+              open={mode === 'research' || sectionFilter === 'provenance'}
+              data-testid="provenance-accordion"
             >
               <summary>
                 <span>{t('sec5.summaryTitle')}</span>
@@ -900,6 +1506,11 @@ function AppWorkbench() {
                   {compatibility.allPassed ? t('sec5.statusVerified') : t('sec5.statusPending')}
                 </span>
               </summary>
+
+              <div className="crid-policy-card">
+                <strong>{t('explore.sec2.cridPolicyTitle')}</strong>
+                <p>{t('explore.sec2.cridPolicyBody')}</p>
+              </div>
 
               <div className="gates-table-wrap">
                 <table className="gates-table" aria-label={t('sec5.tableAria')}>

@@ -4,7 +4,7 @@
 > **NASA Space Apps Challenge 2026** — Challenge: **Dancing with the SARs**  
 > **Team**: **4/K** (Local Event: Hanoi, Vietnam)
 
-[![Automated Tests](https://img.shields.io/badge/Tests-60%2F60%20Passing%20(43%20Python%20%2B%2017%20Web)-10b981)](#15-testing-and-verification)
+[![Automated Tests](https://img.shields.io/badge/Tests-68%2F68%20Passing%20(43%20Python%20%2B%2025%20Web)-10b981)](#15-testing-and-verification)
 [![NISAR Data](https://img.shields.io/badge/Dataset-NISAR__L2__GCOV__V1%20(CRID%20P05036)-38bdf8)](#8-verified-scientific-case-study-an-giang)
 [![Bilingual UI](https://img.shields.io/badge/UI-English%20%7C%20Ti%E1%BA%BFng%20Vi%E1%BB%87t%20(EN%20%7C%20VI)-7dd3bd)](#6-solution-and-key-features)
 [![License](https://img.shields.io/badge/License-MIT-f59e0b)](LICENSE)
@@ -87,21 +87,23 @@ Rather than treating every catalog bounding-box overlap as valid imagery or labe
 
 ## 6. Solution and Key Features
 
-1. **Interactive Mekong Delta Map Workbench (`MapStage.tsx`)**:
-   - Displays the Mekong Delta basin boundary, 13 clickable provinces (`geoBoundaries` CC BY 4.0), tilted NASA CMR granule footprints, and verified NISAR GCOV raster overlays (`Oct 22 γ⁰ dB`, `Nov 03 γ⁰ dB`, `Continuous Δγ⁰ dB`, `Classified ±3.0 dB`, `Common Valid Mask 99.91%`).
-   - Includes an interactive **Before/After Swipe Comparison Dock**, adjustable layer opacity, live cursor/click coordinate readout, custom `0.10° × 0.10°` AOI placement (`Place Custom AOI`), and one-click `Reset Selection`.
-2. **4-Tier Scientific Evidence Distinction (`01 AOI`)**:
-   - Explicitly badges every selection as **Tier 1 (Catalog Discovery)**, **Tier 2 (Footprint Intersection)**, **Tier 3 (Valid Raster Coverage)**, or **Tier 4 (Scientifically Comparable Pair)**.
-3. **NISAR Data Explorer (`02 Catalog`)**:
-   - Filterable inventory of all **29 authentic NASA CMR granules** (`11` Validated V1 + `18` Provisional V1), filterable by collection maturity, relative orbit track (`148, 075, 002, 155, 082, 009`), AOI intersection, and text search, with live `Set BEFORE` / `Set AFTER` pair testing.
-4. **Gate-Protected Before–After Comparison (`03 Compare`)**:
-   - Renders calibrated change statistics and swipe comparison **only** when all 10 compatibility gates pass; fails closed with a diagnostic explanation when an off-swath or incompatible pair is selected.
+1. **Dual-Audience Experience (`Explore` vs. `Research & Gates` Modes)**:
+   - **Explore Mode (General Users)**: Visual-first 4-section workflow (**1. Location → 2. Time Comparison → 3. What Changed? → 4. Explore More**) with readable typography, plain-language radar backscatter summaries, visual change cards, and progressive disclosure accordions.
+   - **Research & Gates Mode (Researchers)**: Full 5-step scientific workbench (**01 AOI → 02 Catalog → 03 Compare → 04 Interpret → 05 Gates**) exposing the 4-Tier Evidence Ladder, 29-granule catalog filters, quantitative dB distributions, CRID Processor Policy (`P05036` vs. `P05023`), 10-gate verification table, and SHA-256 provenance.
+   - Persists mode selection in `localStorage` (`nisar-changelens-mode`) while preserving AOI, observation pair, active layer, and language.
+2. **Resizable Map / Analysis Layout (`workspace-splitter`)**:
+   - Interactive vertical splitter between the MapLibre GL map and the Analysis Sidebar (`340px–720px` bounds, keyboard arrow support, double-click/button reset to `440px`, persisted in `localStorage` `nisar-changelens-rail-width`) with automatic `ResizeObserver` `map.resize()` integration and stacked mobile layout (`<= 860px`).
+3. **Interactive Change Map & Exploratory Threshold Controls (`MapStage.tsx`)**:
+   - Instant switching between **BEFORE (Oct 22)**, **AFTER (Nov 03)**, **CHANGE MAP ($\Delta\text{dB}$)**, and **BEFORE $\leftrightarrow$ AFTER SWIPE**.
+   - Includes a diverging radiometric color scale (`-6 dB` Blue Decrease $\rightarrow$ `0 dB` Neutral White $\rightarrow$ `+6 dB` Red Increase), excluded/invalid pixel indicator (`0.09%`), adjustable opacity slider + `Reset (90%)`, and exploratory display thresholds (**Continuous $\Delta\text{dB}$**, **$\pm 2.0\text{ dB}$ Sensitive**, **$\pm 3.0\text{ dB}$ Reference Baseline**, **$\pm 4.0\text{ dB}$ Strong**).
+4. **Automatic Compatible-Pair Discovery & 3-Level Compatibility Classification**:
+   - Automatically normalizes chronological selection (`Earlier` $\rightarrow$ `Later`) and discovers **22 repeat-pass candidate pairs** across the **29 authentic NASA CMR granules** (`Track 148, 047, 083, 155`), distinguishing **Level 3 (Raster-Verified Compatible Pair)**, **Level 2 (Geometrically Compatible Candidate)**, and **Level 1 (Catalog Candidate Only)**.
 5. **3-Level Scientific Interpretation & Deterministic Q&A (`04 Interpret`)**:
    - Distinguishes **Level 1 (Measured Radar Change)**, **Level 2 (Candidate Physical Mechanisms)**, and **Level 3 (Supported Conclusions & Missing Evidence)**, paired with a deterministic, citation-backed Q&A inspector.
 6. **10 Compatibility Gates, HTTP Range Budget Ledger & SHA-256 Provenance (`05 Gates`)**:
    - Exposes the 10-gate verification table, the resumable **HTTP Range Byte-Budget Ledger** (`33,812,717 / 250,000,000 bytes` = `13.53%` used across two stages), and **SHA-256 checksums** for all 11 verified output files.
 7. **Complete Bilingual (`EN | VI`) Interface (`frontend/src/i18n/`)**:
-   - Instantaneous switching between **English (`EN`)** and **Vietnamese (`VI`)** in the top header without page reload, preserving all map, AOI, filter, and comparison states and persisting in `localStorage` (`nisar-changelens-lang`).
+   - Instantaneous switching between **English (`EN`)** and **Vietnamese (`VI`)** in the top header without page reload, preserving all map, AOI, mode, filter, and comparison states and persisting in `localStorage` (`nisar-changelens-lang`).
 
 ---
 
@@ -109,20 +111,24 @@ Rather than treating every catalog bounding-box overlap as valid imagery or labe
 
 ### Verified Application Screenshots (`docs/screenshots/`)
 
-| English (`EN`) Verified An Giang Workspace | Vietnamese (`VI`) Verified An Giang Workspace |
+| Explore Mode & Visual Change Map (`EN`) | Vietnamese (`VI`) Explore & Change Map |
 | :---: | :---: |
-| ![English Workspace](docs/screenshots/08_bilingual_en_verified_angiang.png) | ![Vietnamese Workspace](docs/screenshots/09_bilingual_vi_verified_angiang.png) |
-| **Regional Swath vs. Off-Swath Geometry** | **Vietnamese 10 Compatibility Gates & Provenance** |
-| ![Mekong Overview](docs/screenshots/02_mekong_overview_and_swath_footprints.png) | ![Vietnamese 10 Gates](docs/screenshots/11_bilingual_vi_10_compatibility_gates.png) |
+| ![Explore Mode](docs/screenshots/01_explore_mode.png) | ![Vietnamese Interface](docs/screenshots/10_vietnamese_interface.png) |
+| **Research & Gates Mode (Full Workbench)** | **10 Compatibility Gates & CRID Policy** |
+| ![Research Mode](docs/screenshots/02_research_gates_mode.png) | ![Compatibility Report](docs/screenshots/08_compatibility_report_research.png) |
 
-Additional verified screenshots in [`docs/screenshots/`](docs/screenshots/):
-- [`01_main_app_angiang_verified.png`](docs/screenshots/01_main_app_angiang_verified.png) — Main workspace with An Giang verified $\Delta\gamma^0$ overlay and swipe dock.
-- [`03_nisar_data_explorer_29_granules.png`](docs/screenshots/03_nisar_data_explorer_29_granules.png) — NISAR Data Explorer showing all 29 NASA CMR granules.
-- [`04_before_after_comparison_and_stats.png`](docs/screenshots/04_before_after_comparison_and_stats.png) — Quantitative backscatter change statistics card (`+0.417 dB` mean shift).
-- [`05_dong_thap_0pct_diagnostic_blocked.png`](docs/screenshots/05_dong_thap_0pct_diagnostic_blocked.png) — Fail-closed diagnostic view for the `0.00%` valid off-swath Đồng Tháp window.
-- [`06_scientific_interpretation_and_qa.png`](docs/screenshots/06_scientific_interpretation_and_qa.png) — English 3-Level Scientific Interpretation & Q&A Inspector.
-- [`07_10_gates_and_provenance.png`](docs/screenshots/07_10_gates_and_provenance.png) — English 10 Compatibility Gates & HTTP Range byte-budget ledger.
-- [`10_bilingual_vi_interpretation_qa.png`](docs/screenshots/10_bilingual_vi_interpretation_qa.png) — Vietnamese 3-Level Scientific Interpretation & Q&A Inspector.
+Complete set of 11 verified UX & Scientific Comparison screenshots in [`docs/screenshots/`](docs/screenshots/):
+- [`01_explore_mode.png`](docs/screenshots/01_explore_mode.png) — Visual-first **Explore** mode with Change Map ($\Delta\gamma^0\text{ dB}$) and diverging legend.
+- [`02_research_gates_mode.png`](docs/screenshots/02_research_gates_mode.png) — **Research & Gates** mode with 5-step workbench and 4-Tier Evidence Ladder.
+- [`03_resized_layout.png`](docs/screenshots/03_resized_layout.png) — Resized Map / Sidebar layout (`584px` sidebar via draggable splitter + `Reset Width` button).
+- [`04_before_visualization.png`](docs/screenshots/04_before_visualization.png) — **Before (`2026-10-22`)** calibrated HH $\gamma^0$ backscatter visualization.
+- [`05_after_visualization.png`](docs/screenshots/05_after_visualization.png) — **After (`2026-11-03`)** calibrated HH $\gamma^0$ backscatter visualization.
+- [`06_change_visualization.png`](docs/screenshots/06_change_visualization.png) — **Change Map ($\Delta\text{dB}$)** with threshold controls (`Continuous`, `±2.0 dB`, `±3.0 dB Reference`, `±4.0 dB`) and diverging colorbar.
+- [`07_compatibility_failure_explore.png`](docs/screenshots/07_compatibility_failure_explore.png) — Simplified plain-language compatibility explanation in **Explore** mode.
+- [`08_compatibility_report_research.png`](docs/screenshots/08_compatibility_report_research.png) — Detailed 10-Gate Compatibility Report & CRID Policy (`P05036` vs `P05023`) in **Research** mode.
+- [`09_english_interface.png`](docs/screenshots/09_english_interface.png) — **English (`EN`)** interface with interactive Before $\leftrightarrow$ After Swipe dock.
+- [`10_vietnamese_interface.png`](docs/screenshots/10_vietnamese_interface.png) — **Vietnamese (`VI`)** localized interface (`Khám phá` & `Tóm tắt biến động bề mặt qua Radar`).
+- [`11_mobile_responsive.png`](docs/screenshots/11_mobile_responsive.png) — **Mobile Responsive (`390x844`)** stacked layout.
 
 ### Public Demo Status & Local Walkthrough
 - **Honest Deployment Status**: No public cloud URL is currently hosted prior to owner publication approval. The complete interactive demo runs locally out-of-the-box (`npm run preview`) with **zero credentials required** using the pre-packaged verified An Giang dataset in `frontend/public/data/verified-angiang/`.

@@ -273,6 +273,99 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
       'Team 4/K · NISAR ChangeLens · NASA Space Apps Challenge 2026 (Dancing with the SARs) · Not an official NASA product',
     'footer.right':
       'Data: NASA/ISRO NISAR L2 GCOV V1 via ASF DAAC · Basemap © Esri / OpenStreetMap · Boundaries: geoBoundaries (CC BY 4.0)',
+
+    // Mode Banner, Splitter & Primary Map Controls (UX Optimization)
+    'mode.exploreBadge': 'EXPLORE MODE · VISUAL CHANGE VIEW',
+    'mode.exploreHint':
+      'Explore first: see where radar reflections changed over time in plain language.',
+    'mode.researchBadge': 'RESEARCH & GATES · FULL SCIENTIFIC WORKBENCH',
+    'mode.researchHint':
+      'Full SAR metadata, 29 CMR granules, 10 compatibility gates, CRID policy & SHA-256 provenance.',
+    'mode.switchToResearchBtn': 'Open Research & Gates Workbench →',
+    'mode.switchToExploreBtn': '← Back to Simplified Explore View',
+    'splitter.aria': 'Resize map and analysis sidebar',
+    'splitter.tooltip': 'Drag to resize map vs. sidebar (Double-click to reset)',
+    'splitter.resetBtn': 'Reset Width',
+    'splitter.resetTitle': 'Reset map and sidebar layout to default width',
+
+    // Primary Map Layer Switcher (BEFORE | AFTER | CHANGE | SWIPE)
+    'primaryLayer.label': 'Map View:',
+    'primaryLayer.before': 'BEFORE (Oct 22)',
+    'primaryLayer.after': 'AFTER (Nov 03)',
+    'primaryLayer.change': 'CHANGE MAP (ΔdB)',
+    'primaryLayer.swipe': 'BEFORE ↔ AFTER SWIPE',
+    'primaryLayer.resetOpacity': 'Reset (90%)',
+    'primaryLayer.thresholdLabel': 'Change View Style:',
+    'primaryLayer.cautionNote':
+      'Colors show changes in radar backscatter (dB) between the two observation dates. They do not independently identify the cause of the change.',
+    'primaryLayer.invalidSwatch': 'Excluded / Invalid (0.09%)',
+
+    // Explore Mode — Section 1: Location
+    'explore.sec1.step': '1',
+    'explore.sec1.eyebrow': 'LOCATION',
+    'explore.sec1.title': 'Where are you exploring?',
+    'explore.sec1.locationLabel': 'Study Area / Location',
+    'explore.sec1.provinceLabel': 'Or jump to a Mekong Delta Province',
+    'explore.sec1.coordsSummary': 'Show technical coordinates & area details',
+    'explore.sec1.statusReady': '✓ Verified Satellite Change Map Available (99.91% valid coverage)',
+    'explore.sec1.statusOffSwath':
+      '⚠ Diagnostic Off-Swath Window (0% valid radar coverage — comparison disabled)',
+    'explore.sec1.statusCatalog':
+      'ℹ Regional / Province Overview (Select An Giang Window to view the pixel-level Change Map)',
+
+    // Explore Mode — Section 2: Time Comparison & Compatible Pair Discovery
+    'explore.sec2.step': '2',
+    'explore.sec2.eyebrow': 'TIME COMPARISON',
+    'explore.sec2.title': 'Observation Dates & Compatibility',
+    'explore.sec2.intervalBadge': 'days between observations',
+    'explore.sec2.comparableBadge': '✓ Scientifically Comparable Pair (Level 3 Verified)',
+    'explore.sec2.geometricBadge': '◐ Geometrically Compatible Candidate (Level 2 — Catalog Only)',
+    'explore.sec2.incompatibleBadge': '✕ Cannot Compare Directly (Level 1)',
+    'explore.sec2.autoOrderedNotice':
+      'Dates were automatically ordered chronologically (Earlier → Later) so Change = Later − Earlier.',
+    'explore.sec2.swapOrderBtn': 'Auto-Order Chronologically (Earlier → Later)',
+    'explore.sec2.pairFinderTitle': 'Compatible Observation Pair Finder',
+    'explore.sec2.pairFinderSubtitle':
+      'Automatically grouped from 29 NASA CMR granules by matching orbit Track, Frame & viewing geometry:',
+    'explore.sec2.level3Heading': 'Level 3 — Raster-Verified Compatible Pair (Ready to View)',
+    'explore.sec2.level2Heading':
+      'Level 2 — Geometrically Compatible Repeat-Pass Candidates (Catalog Metadata Verified)',
+    'explore.sec2.selectPairBtn': 'Load Pair',
+    'explore.sec2.activePairTag': 'Active Pair',
+    'explore.sec2.whyBlockedBtn': "Why can't these images be compared?",
+    'explore.sec2.cridPolicyTitle': 'CRID Processor Compatibility Policy',
+    'explore.sec2.cridPolicyBody':
+      'Comparing two SAR acquisitions requires consistent calibration software. Pairs sharing Validated CRID P05036 (v1.0.20) pass Gate 7 directly. Repeat-pass pairs sharing Provisional CRID P05023 have consistent internal software but provisional maturity, while cross-CRID pairs (P05023 → P05036) require radiometric offset verification before pixel subtraction.',
+
+    // Explore Mode — Section 3: What Changed?
+    'explore.sec3.step': '3',
+    'explore.sec3.eyebrow': 'WHAT CHANGED?',
+    'explore.sec3.title': 'Surface Radar Change Summary',
+    'explore.sec3.leadText':
+      'Some areas show stronger radar returns, while others show weaker returns compared with the earlier observation on October 22, 2026.',
+    'explore.sec3.cardDecTitle': 'Weaker Radar Return (Decrease)',
+    'explore.sec3.cardDecDesc':
+      'Blue areas reflect less radar energy than on Oct 22 (consistent with smoother wet surfaces, ponded water, or cleared vegetation).',
+    'explore.sec3.cardStableTitle': 'Relatively Stable Surface',
+    'explore.sec3.cardStableDesc':
+      'Neutral areas changed by less than the selected threshold between Oct 22 and Nov 3 (96.13% of the window at ±3.0 dB).',
+    'explore.sec3.cardIncTitle': 'Stronger Radar Return (Increase)',
+    'explore.sec3.cardIncDesc':
+      'Red/orange areas reflect more radar energy than on Oct 22 (concentrated in southeastern agricultural plots; consistent with water-stem double-bounce, crop growth, or rougher soil).',
+    'explore.sec3.cautionBoxTitle': 'What the colors mean (Important Scientific Note)',
+    'explore.sec3.cautionBoxBody':
+      'Colors show measured changes in L-band radar backscatter (Δγ⁰ in dB). Backscatter change is NOT a direct water or flood map: positive change does not always mean flooding, and negative change does not always mean drying.',
+
+    // Explore Mode — Section 4: Explore More (Progressive Disclosure)
+    'explore.sec4.step': '4',
+    'explore.sec4.eyebrow': 'EXPLORE MORE',
+    'explore.sec4.title': 'Optional Details & Scientific Context',
+    'explore.sec4.accStats': 'Change Statistics & Numerical Breakdown',
+    'explore.sec4.accObs': 'Satellite Observation Details (Oct 22 & Nov 03)',
+    'explore.sec4.accQuality': 'Data Quality, Valid Coverage & Speckle Filtering',
+    'explore.sec4.accInterpret': 'Scientific Interpretation & Frequently Asked Questions',
+    'explore.sec4.qualityBody':
+      '99.91% of the An Giang window (1,207,740 of 1,208,870 pixels = 120.77 km²) contains valid positive radar measurements on both dates. 1,130 boundary pixels (0.09%) are excluded so invalid data never contaminate neighboring pixels during 5×5 boxcar speckle filtering.',
   },
 
   vi: {
@@ -545,5 +638,98 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
       'Đội 4/K · NISAR ChangeLens · NASA Space Apps Challenge 2026 (Dancing with the SARs) · Không phải sản phẩm chính thức của NASA',
     'footer.right':
       'Dữ liệu: NASA/ISRO NISAR L2 GCOV V1 qua ASF DAAC · Nền bản đồ © Esri / OpenStreetMap · Ranh giới: geoBoundaries (CC BY 4.0)',
+
+    // Mode Banner, Splitter & Primary Map Controls (UX Optimization)
+    'mode.exploreBadge': 'CHẾ ĐỘ KHÁM PHÁ · TRỰC QUAN HÓA BIẾN ĐỘNG',
+    'mode.exploreHint':
+      'Khám phá trước: quan sát trực quan nơi tín hiệu phản xạ radar thay đổi theo thời gian bằng ngôn ngữ dễ hiểu.',
+    'mode.researchBadge': 'NGHIÊN CỨU & CỔNG KIỂM TRA · BÀN LÀM VIỆC KHOA HỌC ĐẦY ĐỦ',
+    'mode.researchHint':
+      'Đầy đủ siêu dữ liệu SAR, 29 granule CMR, 10 cổng tương thích, chính sách CRID & kiểm chứng SHA-256.',
+    'mode.switchToResearchBtn': 'Mở Bàn làm việc Nghiên cứu & 10 Cổng kiểm tra →',
+    'mode.switchToExploreBtn': '← Quay lại Chế độ Khám phá đơn giản',
+    'splitter.aria': 'Kéo thay đổi kích thước bản đồ và bảng phân tích',
+    'splitter.tooltip': 'Kéo để chỉnh độ rộng Bản đồ / Bảng phân tích (Nhấp đúp để đặt lại)',
+    'splitter.resetBtn': 'Đặt lại độ rộng',
+    'splitter.resetTitle': 'Đặt lại bố cục bản đồ và bảng phân tích về kích thước mặc định',
+
+    // Primary Map Layer Switcher (BEFORE | AFTER | CHANGE | SWIPE)
+    'primaryLayer.label': 'Chế độ xem Bản đồ:',
+    'primaryLayer.before': 'TRƯỚC (22/10)',
+    'primaryLayer.after': 'SAU (03/11)',
+    'primaryLayer.change': 'BẢN ĐỒ BIẾN ĐỘNG (ΔdB)',
+    'primaryLayer.swipe': 'KÉO TRƯỢT TRƯỚC ↔ SAU',
+    'primaryLayer.resetOpacity': 'Đặt lại (90%)',
+    'primaryLayer.thresholdLabel': 'Kiểu hiển thị biến động:',
+    'primaryLayer.cautionNote':
+      'Màu sắc thể hiện mức độ thay đổi phản xạ radar (dB) giữa hai ngày quan sát. Chúng không tự xác định nguyên nhân biến động.',
+    'primaryLayer.invalidSwatch': 'Điểm ảnh loại trừ / Không hợp lệ (0,09%)',
+
+    // Explore Mode — Section 1: Location
+    'explore.sec1.step': '1',
+    'explore.sec1.eyebrow': 'VỊ TRÍ QUAN SÁT',
+    'explore.sec1.title': 'Bạn đang khám phá khu vực nào?',
+    'explore.sec1.locationLabel': 'Khu vực nghiên cứu / Vị trí',
+    'explore.sec1.provinceLabel': 'Hoặc chọn nhanh Tỉnh / Thành phố ĐBSCL',
+    'explore.sec1.coordsSummary': 'Xem tọa độ kỹ thuật & diện tích chi tiết',
+    'explore.sec1.statusReady': '✓ Đã có Bản đồ Biến động Vệ tinh xác thực (99,91% diện tích hợp lệ)',
+    'explore.sec1.statusOffSwath':
+      '⚠ Ô chẩn đoán ngoài dải quét (0% điểm ảnh hợp lệ — tự động khóa so sánh)',
+    'explore.sec1.statusCatalog':
+      'ℹ Tổng quan Vùng / Tỉnh (Hãy chọn Cửa sổ An Giang để xem Bản đồ Biến động chi tiết)',
+
+    // Explore Mode — Section 2: Time Comparison & Compatible Pair Discovery
+    'explore.sec2.step': '2',
+    'explore.sec2.eyebrow': 'SO SÁNH THỜI GIAN',
+    'explore.sec2.title': 'Ngày quan sát & Độ tương thích',
+    'explore.sec2.intervalBadge': 'ngày giữa hai lần quan sát',
+    'explore.sec2.comparableBadge': '✓ Cặp quan sát tương thích khoa học (Đã xác thực Cấp 3)',
+    'explore.sec2.geometricBadge': '◐ Tương thích hình học quỹ đạo (Cấp 2 — Mới có trên danh mục)',
+    'explore.sec2.incompatibleBadge': '✕ Không thể so sánh trực tiếp (Cấp 1)',
+    'explore.sec2.autoOrderedNotice':
+      'Hệ thống đã tự động sắp xếp ngày theo đúng thứ tự thời gian (Trước → Sau) để Biến động = Sau − Trước.',
+    'explore.sec2.swapOrderBtn': 'Tự động đảo lại đúng thứ tự thời gian (Trước → Sau)',
+    'explore.sec2.pairFinderTitle': 'Bộ Tìm Kiếm Cặp Quan Sát Tương Thích',
+    'explore.sec2.pairFinderSubtitle':
+      'Tự động gom nhóm từ 29 granule NASA CMR theo cùng quỹ đạo Track, Frame & góc nhìn radar:',
+    'explore.sec2.level3Heading': 'Cấp 3 — Cặp ảnh đã xác thực Raster (Sẵn sàng hiển thị)',
+    'explore.sec2.level2Heading':
+      'Cấp 2 — Các cặp lặp lại tương thích hình học quỹ đạo (Đã kiểm tra siêu dữ liệu danh mục)',
+    'explore.sec2.selectPairBtn': 'Chọn cặp này',
+    'explore.sec2.activePairTag': 'Đang chọn',
+    'explore.sec2.whyBlockedBtn': 'Vì sao chưa thể so sánh hai ảnh này?',
+    'explore.sec2.cridPolicyTitle': 'Chính sách tương thích phiên bản xử lý CRID',
+    'explore.sec2.cridPolicyBody':
+      'So sánh hai ảnh SAR đòi hỏi phần mềm hiệu chuẩn đồng nhất. Các cặp cùng mã CRID P05036 (v1.0.20) đã xác thực sẽ vượt qua Cổng 7 trực tiếp. Các cặp lặp lại cùng mã CRID P05023 có phần mềm nội bộ đồng nhất nhưng thuộc bản Provisional, còn các cặp khác CRID (P05023 → P05036) cần kiểm tra độ lệch hiệu chuẩn bức xạ trước khi trừ điểm ảnh.',
+
+    // Explore Mode — Section 3: What Changed?
+    'explore.sec3.step': '3',
+    'explore.sec3.eyebrow': 'ĐIỀU GÌ ĐÃ THAY ĐỔI?',
+    'explore.sec3.title': 'Tóm tắt biến động bề mặt qua Radar',
+    'explore.sec3.leadText':
+      'Một số khu vực có tín hiệu phản xạ radar mạnh hơn, trong khi một số nơi khác phản xạ yếu hơn so với lần quan sát trước vào ngày 22/10/2026.',
+    'explore.sec3.cardDecTitle': 'Phản xạ Radar yếu đi (Giảm)',
+    'explore.sec3.cardDecDesc':
+      'Vùng màu xanh phản xạ ít năng lượng radar hơn so với ngày 22/10 (thường gặp khi bề mặt ướt phẳng lặng, đọng nước mặt hoặc sau thu hoạch).',
+    'explore.sec3.cardStableTitle': 'Bề mặt tương đối ổn định',
+    'explore.sec3.cardStableDesc':
+      'Vùng trung tính thay đổi ít hơn ngưỡng đang chọn giữa ngày 22/10 và 03/11 (chiếm 96,13% diện tích ở ngưỡng chuẩn ±3,0 dB).',
+    'explore.sec3.cardIncTitle': 'Phản xạ Radar mạnh lên (Tăng)',
+    'explore.sec3.cardIncDesc':
+      'Vùng màu đỏ/cam phản xạ nhiều năng lượng radar hơn so với ngày 22/10 (tập trung ở các ô ruộng phía đông nam; phù hợp với phản xạ kép mặt nước–thân cây, lúa phát triển hoặc mặt đất gồ ghề hơn).',
+    'explore.sec3.cautionBoxTitle': 'Ý nghĩa màu sắc (Lưu ý khoa học quan trọng)',
+    'explore.sec3.cautionBoxBody':
+      'Màu sắc biểu thị độ thay đổi tán xạ ngược radar băng tần L (Δγ⁰ tính bằng dB). Bản đồ biến động phản xạ radar KHÔNG đồng nghĩa với bản đồ ngập lụt trực tiếp: phản xạ tăng không phải lúc nào cũng là ngập, và phản xạ giảm không phải lúc nào cũng là cạn nước.',
+
+    // Explore Mode — Section 4: Explore More (Progressive Disclosure)
+    'explore.sec4.step': '4',
+    'explore.sec4.eyebrow': 'KHÁM PHÁ THÊM',
+    'explore.sec4.title': 'Chi tiết tùy chọn & Bối cảnh khoa học',
+    'explore.sec4.accStats': 'Thống kê biến động & Bảng số liệu chi tiết',
+    'explore.sec4.accObs': 'Thông tin đợt chụp vệ tinh (22/10 & 03/11)',
+    'explore.sec4.accQuality': 'Chất lượng dữ liệu, Độ phủ hợp lệ & Lọc nhiễu Speckle',
+    'explore.sec4.accInterpret': 'Diễn giải khoa học & Câu hỏi thường gặp (Q&A)',
+    'explore.sec4.qualityBody':
+      '99,91% diện tích cửa sổ An Giang (1.207.740 / 1.208.870 điểm ảnh = 120,77 km²) có giá trị đo radar hợp lệ ở cả hai ngày. 1.130 điểm ảnh rìa (0,09%) được loại trừ hoàn toàn để không làm nhiễu các điểm ảnh lân cận trong quá trình lọc trung bình không gian 5×5.',
   },
 };

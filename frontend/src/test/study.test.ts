@@ -6,9 +6,12 @@ import {
   SCIENTIFIC_QA_ITEMS,
   STUDY_AREAS,
   VERIFIED_ANGIANG_PAIR_STATS,
+  VISUALIZATION_THRESHOLD_PRESETS,
   bboxesIntersect,
+  discoverCompatiblePairs,
   estimateBboxAreaKm2,
   evaluatePairCompatibility,
+  normalizeChronologicalPair,
 } from '../data/study';
 import { DISCOVERED_GRANULES } from '../data/catalogInventory';
 
@@ -90,5 +93,62 @@ describe('NISAR ChangeLens Scientific Study & Catalog Verification', () => {
     const area = estimateBboxAreaKm2([104.95, 10.45, 105.05, 10.55]);
     expect(area).toBeGreaterThan(115);
     expect(area).toBeLessThan(125);
+  });
+
+  it('automatically normalizes reversed chronological granule selections into Earlier -> Later order', () => {
+    const reversed = normalizeChronologicalPair('G4410154671-ASF', 'G4404304390-ASF');
+    expect(reversed.earlierConceptId).toBe('G4404304390-ASF');
+    expect(reversed.laterConceptId).toBe('G4410154671-ASF');
+    expect(reversed.wasSwapped).toBe(true);
+
+    const chronological = normalizeChronologicalPair('G4404304390-ASF', 'G4410154671-ASF');
+    expect(chronological.earlierConceptId).toBe('G4404304390-ASF');
+    expect(chronological.laterConceptId).toBe('G4410154671-ASF');
+    expect(chronological.wasSwapped).toBe(false);
+  });
+
+  it('discovers all 22 repeat-pass compatible pairs across the 29 catalog granules with 3-tier classification', () => {
+    const pairs = discoverCompatiblePairs('angiang-screening', [104.95, 10.45, 105.05, 10.55]);
+    expect(pairs.length).toBe(22);
+
+    // Top pair must be the Level 3 Raster-Verified An Giang pair (G4404304390-ASF -> G4410154671-ASF)
+    expect(pairs[0].earlier.conceptId).toBe('G4404304390-ASF');
+    expect(pairs[0].later.conceptId).toBe('G4410154671-ASF');
+    expect(pairs[0].compatibilityLevel).toBe('LEVEL_3_RASTER_VERIFIED');
+    expect(pairs[0].cridPolicyStatus).toBe('IDENTICAL_VALIDATED_CRID');
+    expect(pairs[0].intervalDays).toBe(12);
+
+    // Second pair must be the Level 2 Validated CRID P05036 pair on Track 148 Frame 84
+    const t148f84Validated = pairs.find(
+      (p) =>
+        p.earlier.conceptId === 'G4410568072-ASF' && p.later.conceptId === 'G4410081861-ASF'
+    );
+    expect(t148f84Validated).toBeDefined();
+    expect(t148f84Validated?.compatibilityLevel).toBe('LEVEL_2_GEOMETRIC_CANDIDATE');
+    expect(t148f84Validated?.cridPolicyStatus).toBe('IDENTICAL_VALIDATED_CRID');
+    expect(t148f84Validated?.track).toBe(148);
+    expect(t148f84Validated?.frame).toBe(84);
+
+    // Verify evaluation of Level 2 Validated CRID candidate passes all 7 metadata/geometry gates
+    const evalLevel2 = evaluatePairCompatibility(
+      'G4410568072-ASF',
+      'G4410081861-ASF',
+      'mekong'
+    );
+    expect(evalLevel2.compatibilityLevel).toBe('LEVEL_2_GEOMETRIC_CANDIDATE');
+    expect(evalLevel2.cridPolicyStatus).toBe('IDENTICAL_VALIDATED_CRID');
+    expect(evalLevel2.gates.slice(0, 7).every((g) => g.passed)).toBe(true);
+  });
+
+  it('preserves exact pixel counts across all visualization threshold presets (sum = 1,207,740)', () => {
+    for (const preset of VISUALIZATION_THRESHOLD_PRESETS) {
+      const total = preset.decreasePixels + preset.stablePixels + preset.increasePixels;
+      expect(total).toBe(1207740);
+    }
+    const refPreset = VISUALIZATION_THRESHOLD_PRESETS.find((p) => p.id === '3.0');
+    expect(refPreset?.isReferenceBaseline).toBe(true);
+    expect(refPreset?.decreaseAreaKm2).toBe(0.29);
+    expect(refPreset?.stableAreaKm2).toBe(116.09);
+    expect(refPreset?.increaseAreaKm2).toBe(4.39);
   });
 });
